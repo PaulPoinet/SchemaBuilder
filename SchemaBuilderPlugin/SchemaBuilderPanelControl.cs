@@ -41,14 +41,16 @@ namespace SchemaBuilder
 
       var settings = new CefSettings();
       settings.BrowserSubprocessPath = pathSubprocess;
+      settings.CefCommandLineArgs.Add("disable-gpu", "1");
       Cef.Initialize(settings);
 
       m_browser = new ChromiumWebBrowser("http://localhost:9090/");
       Controls.Add(m_browser);
       m_browser.Dock = DockStyle.Fill;
       m_browser.Enabled = true;
-      m_browser.RegisterAsyncJsObject("Interop", new Interop());
+      m_browser.RegisterAsyncJsObject("Interop", new Interop(m_browser));
       m_browser.Show();
+      
     }
 
     /// <summary>

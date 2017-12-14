@@ -176,12 +176,6 @@ namespace SchemaBuilder
                             color.B.ToString("X2");
         }
 
-
-
-
-
-
-
         public void refresh()
         {
 

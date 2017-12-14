@@ -1,7 +1,7 @@
 <template>
   <div>
     <v-tooltip right>
-      <v-icon @click="dialog = true" style="cursor: pointer;" class="makeSmall" color="yellow" slot="activator">playlist_add</v-icon>
+      <v-icon @click="PlugObject" style="cursor: pointer;" class="makeSmall" color="yellow" slot="activator">playlist_add</v-icon>
       <span>Add Props</span>
     </v-tooltip>
     <v-dialog v-model="dialog" scrollable max-width="300px">
@@ -84,6 +84,13 @@ export default {
       //window.bus.$emit( 'drop-props', this.props );
       this.$emit('addmykids')
 
+    },
+
+    PlugObject() {
+
+        Interop.onClickProperties()
+
+        this.dialog = true
     }
 
   }

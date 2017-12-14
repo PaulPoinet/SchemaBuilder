@@ -63,7 +63,8 @@ export default {
 
   mounted( ) {
     window.bus.$on( 'change-to-schemasTab', state => { this.goToPropsTab( ) } )
-    window.bus.$on( 'change-to-treeTab', state => { this.goToTreeTab( ) } )
+    window.bus.$on('change-to-treeTab', state => { this.goToTreeTab() })
+    window.bus.$on('get-properties', state => { console.log(JSON.parse(state) )})
   },
 
   created( ) {
