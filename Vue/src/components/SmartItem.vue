@@ -7,11 +7,11 @@
       <v-icon class="makeSmall" v-if="isFolder && !open" light color="grey lighten-2">folder</v-icon>
       <v-icon class="makeSmall" v-if="isFolder && open" light color="grey lighten-2">folder_open</v-icon>
       <input v-if="editKey==true" type="text" font-face="Roboto" v-autowidth="{maxWidth: '960px', minWidth: '20px', comfortZone: 0}" @focus="$event.target.select()" id="input" v-model="objectKey" @blur="editKey=false" @keyup.enter="editKey=false">
-      <label v-if="editKey==false  && !lock" v-bind:title="messageEditLabel" @dblclick="editTheKey"> {{objectKey}} </label>
+      <label v-if="editKey==false  && !lock" v-bind:title="messageEditLabel" v-on:mouseover= "isItObject" @dblclick="editTheKey"> {{objectKey}} </label>
       <label v-if="editKey==false  && lock" class="lockColor" v-bind:title="messageCantEdit"> {{objectKey}} </label>
       <span v-if="!isFolder">:</span>
       <input v-if="editValue==true" type="text" font-face="Roboto" v-autowidth="{maxWidth: '960px', minWidth: '20px', comfortZone: 0}" @focus="$event.target.select()" id="input" v-model="objectValue" @blur="editValue=false" @keyup.enter="editValue=false">
-      <label v-if="editValue==false && !isFolder && !lock" v-bind:title="messageEditLabel" @dblclick="editTheValue"> {{objectValue}} </label>
+      <label v-if="editValue==false && !isFolder && !lock" v-bind:title="messageEditLabel" v-on:mouseover= "isItObject" @dblclick="editTheValue"> {{objectValue}} </label>
       <label v-if="editValue==false && !isFolder && lock" class="lockColor" v-bind:title="messageCantEdit"> {{objectValue}} </label>
       <span v-if="isFolder && model.children.length > 0" v-show="!open" class="redFont">{...+{{model.children.length}}}</span>
       <span>&nbsp;</span>
@@ -57,16 +57,32 @@
         </v-list>
       </v-menu>
       <span>&nbsp;</span>
-      <span class="whiteFont" v-if="index>=0 && showIndices">{{index}}</span>
+      <span class="redFont" v-if="index>=0 && showIndices">({{index}})</span>
     </div>
     <ul v-sortable="{ onUpdate: onUpdate }" v-show="open" v-if="isFolder">
       <draggable v-model="model.children" :options="{group:'item', name: 'item', pull:true, sort: true}" @start="drag=true" @end="drag=false" class="drag">
         <item class="item" v-for="(model, index) in model.children" :model="model" :index='index' @deleteMe='deleteKid'></item>
       </draggable>
-      <v-tooltip right>
-        <v-icon style="cursor: pointer;" class="makeSmall" color="grey lighten-1" slot="activator" @click='addSibling'>add_box</v-icon>
-        <span>Add an object</span>
-      </v-tooltip>
+      <div>
+        <v-tooltip right>
+          <v-icon style="cursor: pointer;" @click="showAddOptions" hover xs1 small flat color="grey lighten-1" class="makeSmall" slot="activator">add_to_photos</v-icon>
+          <span>Add...</span>
+        </v-tooltip>
+        <v-menu transition="slide-x-transition" bottom right color="black" v-model="showAddMenu" absolute :position-x="x" :position-y="y">
+          <v-list class="ma-0" dark dense>
+            <v-list-tile>
+              <v-tooltip right>
+                <v-icon style="cursor: pointer;" class="makeSmall" color="grey lighten-1" slot="activator" @click='addSibling'>add_box</v-icon>
+                <span>Add Item</span>
+              </v-tooltip>
+            </v-list-tile>
+            <v-list-tile>
+              <obj-properties v-on:addmykids='addProperties'>
+              </obj-properties>
+            </v-list-tile>
+          </v-list>
+        </v-menu>
+      </div>
     </ul>
   </li>
 </template>
@@ -109,9 +125,12 @@ export default {
       drag: true,
       showIndices: false,
       showMenu: false,
+      showAddMenu: false,
       myProperties: [ ],
       x: 0,
       y: 0,
+      customName: null,
+      myObjectId: null
     }
   },
   computed: {
@@ -135,6 +154,26 @@ export default {
         this.showMenu = true
       } )
     },
+
+    isItObject(){
+      if (this.objectKey == "Id"){
+        console.log( this.objectValue )
+        window.bus.$emit( 'myRhinoId', this.objectValue )
+        Interop.showObject(this.objectValue)
+        Interop.showObject2()
+      }
+    },
+
+    showAddOptions( e ) {
+      e.preventDefault( )
+      this.showMenu = false
+      this.x = e.clientX
+      this.y = e.clientY
+      this.$nextTick( ( ) => {
+        this.showAddMenu = true
+      } )
+    },
+
     deleteKid( index ) {
       this.model.children.splice( index, 1 )
     },
@@ -180,19 +219,48 @@ export default {
       } )
     },
 
+
     addProperties( ) {
-      console.log( this.myProperties )
-      if ( !this.model.children ) this.$set( this.model, 'children', [ ] )
-      for ( var i = 0; i < this.myProperties.length; i++ ) {
-        this.model.children.push( {
-          Key: this.myProperties[ i ],
-          Value: "ObjectValue",
+      if ( !this.model.children ) {
+        this.$set( this.model, 'children', [ ] )
+        this.model.children.push( { Key: 'Id', Value: this.myObjectId }, {
+          Key: "RhinoProperties",
+          Value: "example",
+          children: [
+          ]
         } )
+        for ( var i = 0; i < this.myProperties.length; i++ ) {
+          this.model.children[ 1 ].children.push( {
+            Key: this.myProperties[ i ].split( ' : ' )[ 0 ],
+            Value: this.myProperties[ i ].split( ' : ' )[ 1 ],
+          } )
+        }
+      } else {
+        this.model.children.push( {
+          Key: this.customName,
+          Value: "ObjectValue",
+          children: [
+            { Key: 'Id', Value: this.myObjectId },
+            {
+              Key: "RhinoProperties",
+              Value: "example",
+              children: [ ]
+            }
+          ]
+        } )
+        for ( var i = 0; i < this.myProperties.length; i++ ) {
+          this.model.children[ this.model.children.length - 1 ].children[ 1 ].children.push( {
+            Key: this.myProperties[ i ].split( ' : ' )[ 0 ],
+            Value: this.myProperties[ i ].split( ' : ' )[ 1 ],
+          } )
+        }
       }
     },
 
+
+
+
     addSibling( ) {
-      console.log( 'asdfasdfsadfasdfasfd' )
       this.model.children.push( {
         Key: "ObjectKey",
         Value: "ObjectValue",
@@ -230,6 +298,12 @@ export default {
     } )
     window.bus.$on( 'add-properties', state => {
       this.myProperties = state
+    } )
+    window.bus.$on( 'obj-name', state => {
+      this.customName = state
+    } )
+    window.bus.$on( 'obj-Id', state => {
+      this.myObjectId = state
     } )
   }
 }

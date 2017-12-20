@@ -1,11 +1,10 @@
 <template>
   <v-app dark>
-    <br>
-    <br />
+
     <v-tabs v-model="active" centered fixed>
       <v-toolbar extended dark class>
-
-        <v-toolbar-title slot="extension" class="display-0">Speckle Tree Builder</v-toolbar-title>
+    <v-btn fab dark small @click.native='showDev'><v-icon dark>add</v-icon></v-btn>
+        <v-toolbar-title slot="extension" class="display-0">Schema Builder</v-toolbar-title>
       </v-toolbar>
       <v-tabs-bar ref="myTabs">
         <v-tabs-item key="tree" href='tree'>
@@ -59,12 +58,15 @@ export default {
     goToTreeTab( ) {
       this.active = 'tree'
     },
+    showDev() {
+      Interop.showDev()
+      
+    }
   },
 
   mounted( ) {
     window.bus.$on( 'change-to-schemasTab', state => { this.goToPropsTab( ) } )
     window.bus.$on('change-to-treeTab', state => { this.goToTreeTab() })
-    window.bus.$on('get-properties', state => { console.log(JSON.parse(state) )})
   },
 
   created( ) {

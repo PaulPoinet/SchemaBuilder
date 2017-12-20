@@ -32,7 +32,7 @@
     protected override Rhino.PlugIns.LoadReturnCode OnLoad(ref string errorMessage)
     {
       var panel_type = typeof(SchemaBuilderPanelControl);
-      Rhino.UI.Panels.RegisterPanel(this, panel_type, "Chromium", SchemaBuilder.Properties.Resources.SchemaBuilder);
+      Rhino.UI.Panels.RegisterPanel(this, panel_type, "SchemaBuilder", SchemaBuilder.Properties.Resources.SchemaBuilder);
       return Rhino.PlugIns.LoadReturnCode.Success;
     }
 

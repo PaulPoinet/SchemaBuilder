@@ -1,31 +1,27 @@
 <template>
   <div>
     <v-tooltip right>
-      <v-icon @click="PlugObject" style="cursor: pointer;" class="makeSmall" color="yellow" slot="activator">playlist_add</v-icon>
-      <span>Add Props</span>
+      <v-icon @click="PlugObject" style="cursor: pointer;" class="makeSmall" color="yellow" slot="activator">extension</v-icon>
+      <span>Add Object</span>
     </v-tooltip>
-    <v-dialog v-model="dialog" scrollable max-width="300px">
+    <v-dialog v-model="dialog" scrollable max-width="400px">
       <v-card>
-        <v-card-title>Select the object's properties to attach!</v-card-title>
+        <v-card-title class="headline">Select some properties!</v-card-title>
+        <v-card-title v-if="myDict">Id: {{myDict["ObjectId"]}}</v-card-title>
+        <v-flex xs10>
+          <v-text-field class="ma-3" name="whatever" label="Object's Name" v-model="inputText" dark></v-text-field>
+        </v-flex>
         <v-divider></v-divider>
         <v-card-text style="height: 300px;">
-          <v-checkbox label="GroupList" v-model="props" value="GroupList" hide-details color="white">></v-checkbox>
-          <v-checkbox label="LayerName" v-model="props" value="LayerName" hide-details color="white">></v-checkbox>
-          <v-checkbox label="ObjectColor" v-model="props" value="ObjectColor" hide-details color="white">></v-checkbox>
-          <v-checkbox label="ObjectType" v-model="props" value="ObjectType" hide-details color="white">></v-checkbox>
-          <v-checkbox label="IsValid" v-model="props" value="IsValid" hide-details color="white">></v-checkbox>
-          <v-checkbox label="Document" v-model="props" value="Document" hide-details color="white">></v-checkbox>
-          <v-checkbox label="IsDeletable" v-model="props" value="IsDeletable" hide-details color="white">></v-checkbox>
-          <v-checkbox label="IsDeleted" v-model="props" value="IsDeleted" hide-details color="white">></v-checkbox>
-          <v-checkbox label="IsNormal" v-model="props" value="IsNormal" hide-details color="white">></v-checkbox>
-          <v-checkbox label="IsLocked" v-model="props" value="IsLocked" hide-details color="white">></v-checkbox>
-          <v-checkbox label="IsHidden" v-model="props" value="IsHidden" hide-details color="white">></v-checkbox>
+          <v-checkbox class="ma-0" v-for="(value, key) in myDict" v-bind:label="`${key.toString()} : ${value.toString()}`" v-model="props" v-bind:value="`${key} : ${value}`" hide-details color="white"></v-checkbox>
         </v-card-text>
+        <v-divider></v-divider>
         <v-card class="ma-2" color="grey darken-4">
           <v-card-text v-if="props.length > 0">
             <span v-if="props.length > 0">Selection: {{ props }}</span>
           </v-card-text>
         </v-card>
+        <v-divider></v-divider>
         <v-card-actions>
           <v-tooltip bottom>
             <v-btn @click.native="attachProps" slot="activator">
@@ -50,6 +46,7 @@
   </div>
 </template>
 <script>
+
 export default {
   components: {
 
@@ -60,6 +57,8 @@ export default {
       saveSchema: false,
       dialog: false,
       props: [ ],
+      myDict: null,
+      inputText: null,
     }
   },
 
@@ -80,21 +79,30 @@ export default {
 
     attachProps( ) {
       this.dialog = false
-      window.bus.$emit( 'add-properties', this.props)
-      //window.bus.$emit( 'drop-props', this.props );
-      this.$emit('addmykids')
-
+      window.bus.$emit( 'obj-Id', this.myDict["ObjectId"] )
+      window.bus.$emit( 'add-properties', this.props )
+      window.bus.$emit( 'obj-name', this.inputText )
+      this.$emit( 'addmykids' )
+ 
     },
 
-    PlugObject() {
+    PlugObject( ) {
+      this.dialog = true
+      Interop.onClickProperties( )
+    },
 
-        Interop.onClickProperties()
+    checkBoxPlug( state ) {
 
-        this.dialog = true
+      this.myDict = JSON.parse( state );
     }
-
+  },
+  mounted( ) {
+    window.bus.$on( 'get-properties', state => {
+      this.checkBoxPlug( state )
+    } )
   }
 }
 </script>
 <style>
+
 </style>

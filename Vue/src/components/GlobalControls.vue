@@ -13,12 +13,12 @@
         </v-btn>
         <span>Expand all</span>
       </v-tooltip>
-      <!--<v-tooltip bottom>
+      <v-tooltip bottom>
         <v-btn class="ma-1" medium color="grey darken-2" @click="showIndices" slot="activator">
           <v-icon light>info_outline</v-icon>
         </v-btn>
         <span>Show/hide indices</span>
-      </v-tooltip>-->
+      </v-tooltip>
     </div>
     <br>
     <br />
