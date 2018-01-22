@@ -1,0 +1,303 @@
+<#@ assembly name="$(SolutionDir)CodeTemplates\Komon\Komon.TextTemplates.dll" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ import namespace="System.Xml.Serialization" #>
+<#@ import namespace="System.Diagnostics" #>
+<#@ import namespace="System.ComponentModel" #>
+<#@ import namespace="System.Text.RegularExpressions" #>
+
+
+<#+
+
+
+// Define other methods and classes here
+public string MakeObservable(string x, string nameSpace, Dictionary<string,string> typeMap, string[] enumFiles)
+{
+
+	x = x.Replace("String", "string");
+	var isDto = !typeMap.Select(a => a.Value).Contains(x) && !x.Contains("<string>") && !x.Contains("void") && !x.Contains("KomonFramework");
+
+	var isEnum = enumFiles.Select(a => System.IO.Path.GetFileNameWithoutExtension(a)).Contains(x);
+
+	var makeReplacement = false;
+	var dicArgMatch = new Regex("Array<(.*)>").Match(x);
+	
+	if (dicArgMatch.Success)
+	{
+		var type = dicArgMatch.Groups[1].Value;
+		var isGenericEnum = enumFiles.Select(a => System.IO.Path.GetFileNameWithoutExtension(a)).Contains(type); // Ugly hack
+		if (isGenericEnum)
+        {
+			type = nameSpace.Replace("Observables","") + "." + type;
+        }
+		else
+        {
+			if (isDto && !type.Contains(nameSpace))
+			{
+				makeReplacement = true;
+				type = nameSpace + ".I" + type;
+			}
+        }
+		x = "KnockoutObservableArray<" + type + ">";	
+	}
+	else if (isEnum)
+    {
+		x = nameSpace.Replace("Observables","") + "."  + x;
+    }
+	else if (isDto)
+    {
+		makeReplacement = true;
+		x = nameSpace + ".I"  + x;
+    }
+	else // string, number and ordinary data types
+    {
+		x = "KnockoutObservable<" + x + ">";
+    }
+	
+
+	//var enums = enumFiles.Select(a => System.IO.Path.GetFileNameWithoutExtension(a));
+	
+
+
+	// Ugly hack to fix enums
+	// if (!makeReplacement && !(x.Contains("Type") || x == "Severity" ||x.Contains("Status") || x.Contains("PopulationType")))
+	// {
+	// 	x = x.Replace(nameSpace, nameSpace + "Observables");
+	// }
+
+	return x;
+}
+
+// Define other methods and classes here
+public string ReplaceAll(string x, Dictionary<string, string> replaceDic)
+{
+	if (x == "Task")
+	{
+		x = x.Replace("Task", "<void>");
+	}
+	else
+	{
+		x = x.Replace("Task", "");
+	}
+
+	// Replace dictionaries
+	var dicArgMatch = new Regex("Dictionary<(.*?)>").Match(x);
+	if (dicArgMatch.Success)
+		x = "<Array<KomonContractBase.Tuple<" + dicArgMatch.Groups[1] + ">>>";
+
+
+	x = x.Replace("Komon.Framework","Komon.Contract");
+	x = x.Replace("Komon.Komon.","Komon.");
+
+	foreach (var element in replaceDic)
+	{
+		x = x.Replace(element.Key, element.Value);
+	}
+
+	if (x == "void")
+		x = x.Replace("void", "<void>");
+
+	return x;
+}
+
+public void PrintTsClients(string[] interfaces,string[] custom,string[] enumFiles, string nameSpace)
+{
+	var typeMap = new Dictionary<string,string>
+	{
+		{"Guid","string"},
+		{"<Guid>","<string>"},
+		{"Guid?","string"},
+		{"DateTime?","Date"},
+		{"DateTime","Date"},
+		{"TimeSpan","TimeRanges"},
+		{"int","number"},
+		{"int?","number"},
+		{"double","number"},
+		{"double?","number"},
+		{"byte[]","string"},
+		{"bool","boolean"},
+		{"List","Array"},
+		{"DisposableEnumerable","Array"},
+		{"ReadOnlyCollection","Array"}
+	
+	};
+	
+	
+   var types =   (from t in   custom.SelectMany(xn => Komon.TextTemplates.GetClasses(xn))					
+						select new
+                        {
+                            Name = t.Name,
+                            Properties = t.Properties
+                                            .Select(x=> new
+                                            {
+                                                Name = x.Name,
+												Type = ReplaceAll(x.Type, typeMap),
+                                            })
+						});
+
+ var enums = (from f in enumFiles.SelectMany(xn => Komon.TextTemplates.GetEnums(xn))
+			 select new
+			 {
+				Name = f.Name,
+				Members = f.Members
+			 }).ToList();
+
+
+var ifs = (from ints in interfaces.SelectMany(xn => Komon.TextTemplates.GetInterfaces(xn))
+		  select new
+		  {
+			Name = ints.Name,
+			Methods  = (from m in ints.Methods
+                         select new
+                         {
+                             Name = m.Name.Replace("Komon.Komon.","Komon."),
+                             Return = m.Return,  
+                             Params = string.Join(",",m.Parameters.Select(x=>string.Format("{1}:{0}", ReplaceAll(x.Type, typeMap),x.Name))).Replace("Komon.Komon.","Komon."),
+                             ParamNames = string.Join(",", m.Parameters.Select(x => string.Format("{0}",x.Name))).Replace("Komon.Komon.","Komon."),
+                             ParamTypes = string.Join(",", m.Parameters.Select(x => string.Format("{0}", x.Type))).Replace("Komon.Komon.","Komon."),
+							 ParamSerial =  m.Parameters.Select((x,i) => string.Format("ps.push({{ Key: \"{0}\", Value: {0} }});", x.Name,x.Type)),
+                         })
+						 .Select(x=>new
+						 {
+						    Name = x.Name,
+                            Return = ReplaceAll(x.Return, typeMap), 
+                            Params = x.Params,
+                            ParamNames = x.ParamNames,
+                            ParamTypes = x.ParamTypes,
+							 ParamSerial = x.ParamSerial,
+                         })
+						 .ToList()
+		}).ToList();
+
+#>
+
+<#+  
+var manager = TemplateFileManager.Create(this);
+manager.StartNewFile(nameSpace + "Observables.ts"); 
+
+#>
+
+import KomonModel = require("<#= nameSpace.ToLower()#>");
+
+export = <#= nameSpace#>Observables;
+
+module <#= nameSpace#>Observables {
+<#+
+    foreach(var i in types)
+	{
+#>
+   export interface I<#=i.Name #> {
+<#+		foreach(var p in i.Properties.Where(x=>!x.Type.Contains("Tuple")))
+		{
+
+		var optType = p.Type.EndsWith( "?") ? "?" : "";
+
+		var type = MakeObservable(p.Type.Trim('?'), nameSpace + "Observables", typeMap, enumFiles);
+		var name = p.Name + optType;
+#>
+        <#= name #>: <#=type#>;
+<#+
+	    }	
+#>
+    }
+<#+
+	}
+#>
+}
+
+<#+  
+	manager.StartNewFile(nameSpace + ".ts"); 
+#>
+import <#= nameSpace#>Observables = require("<#= nameSpace.ToLower()#>observables");
+import KomonContractBase = require("komoncontractbase");
+import Site = require("site");
+
+export = <#= nameSpace#>;
+module <#= nameSpace#> {
+<#+
+    foreach(var i in types)
+	{
+#>
+    export interface I<#=i.Name #> {
+<#+		foreach(var p in i.Properties.Where(x=>!x.Type.Contains("Tuple")))
+		{
+
+		var type = p.Type.Trim('?');
+		// Ugly hack - Enums should be named with status
+		//var repType = type.Contains("Status") || type.Contains("PopulationType") ? type : type.Replace(nameSpace + ".", nameSpace + ".I");
+		var name = p.Name + "?";
+#>
+        <#= name #>: <#=type#>;
+<#+
+	    }	
+#>
+    }
+	export class <#=i.Name #> extends KomonContractBase.JsonObjectBase<<#=nameSpace #>Observables.I<#=i.Name #>> {
+<#+		foreach(var p in i.Properties.Where(x=>!x.Type.Contains("Tuple")))
+		{
+		var name = p.Name;
+#>
+        <#= name #>: <#=p.Type.Trim('?')#>;
+<#+
+	    }	
+#>
+    }
+<#+
+	}
+	foreach(var i in enums)
+	{
+#>
+    export enum <#=i.Name #> {
+<#+		foreach(var p in i.Members)
+		{
+#>
+        <#=p#>,
+<#+
+		}
+#>
+    }
+<#+
+	}
+	foreach(var i in ifs)
+	{
+#>
+   export class <#=i.Name.Substring(1) #> {  
+	    _client: KomonContractBase.Client = new KomonContractBase.Client(Site.Config.SpaWebUrl, Site.Config.WebApiBaseAddress, "<#=i.Name.Substring(1) #>");
+
+<#+		foreach(var m in i.Methods)
+		{
+			var returnValue = m.Return;
+			if (!returnValue.Contains("Array"))
+				returnValue = returnValue.Replace("<","").Replace(">","");
+			else
+				returnValue = returnValue.Substring(1,returnValue.Length-2);
+
+			var returnIValue = MakeObservable(returnValue, nameSpace + "Observables", typeMap, enumFiles);
+#>
+
+		<#+ Write(m.Name); #>(<#+ Write(m.Params); #>) : KomonContractBase.Promise<KomonContractBase.KomonResult<<#=returnValue#>,<#=returnIValue#>>>
+        { 
+		    var ps = Array<KomonContractBase.ServerArgument>();
+<#+
+			foreach(var ser in m.ParamSerial)
+			{
+#>
+            <#=ser#>
+<#+
+			}
+#>		    
+			return this._client.PostServer<<#=returnValue#>,<#=returnIValue#>>("<#=m.Name#>",ps);
+	
+		}
+<#+
+		}
+#>
+    }
+<#+
+	}
+#>
+}
+<#+
+	manager.Process();
+}
+#>
+

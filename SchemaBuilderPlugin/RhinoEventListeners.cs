@@ -11,19 +11,24 @@ using System.Text;
 using Newtonsoft.Json;
 using System.IO;
 using System.Drawing;
+using CefSharp.WinForms;
+using CefSharp;
 
 namespace SchemaBuilder
 {
     internal class RhinoEventListeners
     {
+        public static ChromiumWebBrowser Browser { get; set; }
         /// <summary>
         /// Private constructor
         /// </summary>
-        private RhinoEventListeners()
+        internal RhinoEventListeners()
         {
             IsEnabled = false;
         }
 
+        public ObjectsInTheTree displayObjInTheTree { get; set; }
+        public bool? displayObjInTheTree_bool = null;
 
         /// <summary>
         /// The one and only SampleCsEventHandlers object
@@ -36,12 +41,18 @@ namespace SchemaBuilder
         public static RhinoEventListeners Instance
         {
             get { return g_instance ?? (g_instance = new RhinoEventListeners()); }
-        }
+            //SetInteropInstance(Interop interop);
+    }
 
         /// <summary>
         /// Returns the enabled status
         /// </summary>
         public bool IsEnabled { get; private set; }
+        public Interop myInterop { get; set; }
+        public bool transformTrigger { get; set; }
+        public bool _keyPressed { get; set; }
+        //public bool transformTrigger = false;
+        
 
         /// <summary>
         /// Enables or disables the event handlers
@@ -52,10 +63,15 @@ namespace SchemaBuilder
             {
                 if (enable)
                 {
+
+
                     //RhinoApp.AppSettingsChanged += OnAppSettingsChanged;
                     //RhinoApp.Closing += OnClosing;
-                    //RhinoApp.EscapeKeyPressed += OnEscapeKeyPressed;
-                    //RhinoApp.Idle += OnIdle;
+                    RhinoApp.EscapeKeyPressed += OnEscapeKeyPressed;
+                    //Rhino.RhinoApp.KeyboardEvent += new Rhino.RhinoApp.KeyboardHookEvent(RhinoApp_KeyboardEvent);
+                    //Rhino.RhinoApp.KeyboardEvent += RhinoApp_KeyboardEvent1;
+                    //public event EventHandler ThresholdReached;
+
                     //RhinoApp.Initialized += OnInitialized;
                     //RhinoApp.RendererChanged += OnRendererChanged;
 
@@ -71,12 +87,12 @@ namespace SchemaBuilder
                     //RhinoDoc.DeleteRhinoObject += OnDeleteRhinoObject;
                     //RhinoDoc.UndeleteRhinoObject += OnUndeleteRhinoObject;
                     //RhinoDoc.PurgeRhinoObject += OnPurgeRhinoObject;
-                    //RhinoDoc.ModifyObjectAttributes += OnModifyObjectAttributes;
-                    //RhinoDoc.BeforeTransformObjects += OnBeforeTransformObjects;
+                    RhinoDoc.ModifyObjectAttributes += OnModifyObjectAttributes;
+                    RhinoDoc.BeforeTransformObjects += OnBeforeTransformObjects;
 
-                    //RhinoDoc.SelectObjects += OnSelectObjects;
-                    //RhinoDoc.DeselectObjects += OnDeselectObjects;
-                    //RhinoDoc.DeselectAllObjects += OnDeselectAllObjects;
+                    RhinoDoc.SelectObjects += OnSelectObjects;
+                    RhinoDoc.DeselectObjects += OnDeselectObjects;
+                    RhinoDoc.DeselectAllObjects += OnDeselectAllObjects;
 
                     //RhinoDoc.GroupTableEvent += OnGroupTableEvent;
                     //RhinoDoc.InstanceDefinitionTableEvent += OnInstanceDefinitionTableEvent;
@@ -102,8 +118,10 @@ namespace SchemaBuilder
                 {
                     //RhinoApp.AppSettingsChanged -= OnAppSettingsChanged;
                     //RhinoApp.Closing -= OnClosing;
-                    //RhinoApp.EscapeKeyPressed -= OnEscapeKeyPressed;
+                    RhinoApp.EscapeKeyPressed -= OnEscapeKeyPressed;
+
                     //RhinoApp.Idle -= OnIdle;
+                    
                     //RhinoApp.Initialized -= OnInitialized;
                     //RhinoApp.RendererChanged -= OnRendererChanged;
 
@@ -119,12 +137,12 @@ namespace SchemaBuilder
                     //RhinoDoc.DeleteRhinoObject -= OnDeleteRhinoObject;
                     //RhinoDoc.UndeleteRhinoObject -= OnUndeleteRhinoObject;
                     //RhinoDoc.PurgeRhinoObject -= OnPurgeRhinoObject;
-                    //RhinoDoc.ModifyObjectAttributes -= OnModifyObjectAttributes;
-                    //RhinoDoc.BeforeTransformObjects -= OnBeforeTransformObjects;
+                    RhinoDoc.ModifyObjectAttributes -= OnModifyObjectAttributes;
+                    RhinoDoc.BeforeTransformObjects -= OnBeforeTransformObjects;
 
-                    //RhinoDoc.SelectObjects -= OnSelectObjects;
-                    //RhinoDoc.DeselectObjects -= OnDeselectObjects;
-                    //RhinoDoc.DeselectAllObjects -= OnDeselectAllObjects;
+                    RhinoDoc.SelectObjects -= OnSelectObjects;
+                    RhinoDoc.DeselectObjects -= OnDeselectObjects;
+                    RhinoDoc.DeselectAllObjects -= OnDeselectAllObjects;
 
                     //RhinoDoc.GroupTableEvent -= OnGroupTableEvent;
                     //RhinoDoc.InstanceDefinitionTableEvent -= OnInstanceDefinitionTableEvent;
@@ -148,6 +166,17 @@ namespace SchemaBuilder
                 }
             }
             IsEnabled = enable;
+        }
+
+        private void DImitrieIdleEvent(object sender, EventArgs e)
+        {
+            Debug.WriteLine("dimitrie");
+        }
+
+        private void RhinoApp_KeyboardEvent1(int key)
+        {
+            Debug.WriteLine(key);
+            //throw new NotImplementedException();
         }
 
 
@@ -188,17 +217,114 @@ namespace SchemaBuilder
         /// <summary>
         /// Called when Rhino enters an idle state
         /// </summary>
-        public static void OnIdle(object sender, EventArgs e)
+        /// 
+        public void OnIdle(object sender, EventArgs e)
         {
-            //DebugWriteMethod();
+            DebugWriteMethod();
+            myInterop.SpreadObjects(0, true);
+            RhinoApp.Idle -= OnIdle;
         }
-
+        public void OnIdleHover(object sender, EventArgs e)
+        {
+            DebugWriteMethod();
+            Rhino.RhinoApp.WriteLine("after hover");
+            //myInterop.SpreadObjects(0, true);
+            //System.Threading.Thread.Sleep(1000);
+            RhinoApp.Idle -= OnIdleHover;
+        }
         /// <summary>
         /// Called when the escape key has been pressed
         /// </summary>
-        public static void OnEscapeKeyPressed(object sender, EventArgs e)
+        public void OnEscapeKeyPressed(object sender, EventArgs e)
         {
             DebugWriteMethod();
+            Rhino.RhinoApp.WriteLine("biaaatch!");
+        }
+
+        void RhinoApp_KeyboardEvent(int key)
+        {
+            //Debug.WriteLine(key);
+
+            //myKeyPressed = key == 16;
+
+            //return;
+            if (key == 17) // ctrl key pressed
+            {
+
+
+                Rhino.RhinoApp.WriteLine("Fire");
+
+                System.Drawing.Point myloc = System.Windows.Forms.Cursor.Position;
+                Rhino.UI.MouseCursor.SetToolTip("heywassup");
+                //Rhino.RhinoApp.WriteLine(myloc.X.ToString()+","+myloc.Y.ToString());
+                Rhino.Display.RhinoView myViewport = Rhino.RhinoDoc.ActiveDoc.Views.ActiveView;
+                System.Drawing.Rectangle view_screen_rect = myViewport.ScreenRectangle;
+
+                double XCoor = myloc.X - view_screen_rect.Left;
+                double YCoor = myloc.Y - view_screen_rect.Top;
+                //Rhino.RhinoApp.WriteLine(XCoor + "," + YCoor);
+
+
+                Rhino.Display.RhinoViewport viewport = myViewport.ActiveViewport;
+                System.Drawing.Point view_client_point = new System.Drawing.Point();
+                view_client_point.X = (int)XCoor;
+                view_client_point.Y = (int)YCoor;
+
+                Rhino.Geometry.Line myLine = new Rhino.Geometry.Line();
+                bool gotline = viewport.GetFrustumLine(view_client_point.X, view_client_point.Y, out myLine);
+                if (gotline == true)
+                {
+                    List<Guid> myGuids = myInterop.allGuids;
+                    List<Guid> myHoveredGuids = new List<Guid>();
+
+                    foreach (Guid guid in myGuids)
+                    {
+                        Rhino.DocObjects.RhinoObject foundObject = Rhino.RhinoDoc.ActiveDoc.Objects.Find(guid);
+                        Rhino.Geometry.Curve[] myCrvs;
+                        Rhino.Geometry.Point3d[] myPts;
+                        bool cbx = Rhino.Geometry.Intersect.Intersection.CurveBrep(myLine.ToNurbsCurve(), foundObject.Geometry.GetBoundingBox(true).ToBrep(), 0.01, out myCrvs, out myPts);
+                        if (myPts.Length > 0)
+                        {
+                            myHoveredGuids.Add(foundObject.Id);
+                        }
+                    }
+
+                    if (myHoveredGuids.Count > 0)
+                    {
+                        List<double> allDists = new List<double>();
+                        foreach (Guid guid in myHoveredGuids)
+                        {
+                            Rhino.DocObjects.RhinoObject foundObject = Rhino.RhinoDoc.ActiveDoc.Objects.Find(guid);
+                            Rhino.Geometry.Point3d myCe = foundObject.Geometry.GetBoundingBox(true).Center;
+                            double dist = myLine.To.DistanceTo(myCe);
+                            allDists.Add(dist);
+                        }
+                        var sorted = allDists
+                            .Select((x, i) => new KeyValuePair<double, int>(x, i))
+                            .OrderBy(x => x.Key)
+                            .ToList();
+
+                        List<double> B = sorted.Select(x => x.Key).ToList();
+                        List<int> idx = sorted.Select(x => x.Value).ToList();
+                        Rhino.RhinoApp.WriteLine(myHoveredGuids[idx[0]].ToString());
+                        RhinoApp.Idle += OnIdleHover;
+                    }
+                    else
+                    {
+                        Rhino.RhinoApp.WriteLine("C'est la dech");
+                    }
+                    
+                }
+                else
+                {
+                    Rhino.RhinoApp.WriteLine("no keys");
+                }
+
+
+            }
+
+
+
         }
 
         #endregion
@@ -265,11 +391,13 @@ namespace SchemaBuilder
         /// </summary>
         void OnAddRhinoObject(object sender, Rhino.DocObjects.RhinoObjectEventArgs e)
         {
+            RhinoApp.WriteLine("add");
             DebugWriteMethod();
         }
 
         void OnReplaceRhinoObject(object sender, Rhino.DocObjects.RhinoReplaceObjectEventArgs e)
         {
+            RhinoApp.WriteLine("replace");
             DebugWriteMethod();
         }
 
@@ -278,11 +406,13 @@ namespace SchemaBuilder
         /// </summary>
         void OnDeleteRhinoObject(object sender, Rhino.DocObjects.RhinoObjectEventArgs e)
         {
+            RhinoApp.WriteLine("delete");
             DebugWriteMethod();
         }
 
         void OnUndeleteRhinoObject(object sender, Rhino.DocObjects.RhinoObjectEventArgs e)
         {
+            myInterop.SpreadObjects(0, true);
             DebugWriteMethod();
         }
 
@@ -291,6 +421,7 @@ namespace SchemaBuilder
         /// </summary>
         void OnPurgeRhinoObject(object sender, Rhino.DocObjects.RhinoObjectEventArgs e)
         {
+            RhinoApp.WriteLine("purge");
             DebugWriteMethod();
         }
 
@@ -299,15 +430,18 @@ namespace SchemaBuilder
         /// </summary>
         void OnModifyObjectAttributes(object sender, Rhino.DocObjects.RhinoModifyObjectAttributesEventArgs e)
         {
+            RhinoApp.WriteLine("atts");
             DebugWriteMethod();
         }
 
         /// <summary>
         /// Called before objects are being transformed
         /// </summary>
+        public void SetInteropInstance(Interop interop) => this.myInterop = interop;
+
         void OnBeforeTransformObjects(object sender, Rhino.DocObjects.RhinoTransformObjectsEventArgs e)
         {
-            DebugWriteMethod();
+            RhinoApp.Idle += OnIdle;
         }
 
         #endregion
@@ -317,25 +451,86 @@ namespace SchemaBuilder
         /// <summary>
         /// Called when objects are selected
         /// </summary>
-        public static void OnSelectObjects(object sender, Rhino.DocObjects.RhinoObjectSelectionEventArgs e)
+        public void OnSelectObjects(object sender, Rhino.DocObjects.RhinoObjectSelectionEventArgs e)
         {
             DebugWriteMethod();
+            if (displayObjInTheTree_bool == null)
+            {
+            }
+            else
+            {
+                displayObjInTheTree.Enabled = false;
+                Rhino.RhinoDoc.ActiveDoc.Views.Redraw();
+            }
+            List<Rhino.DocObjects.RhinoObject> mySelectedObjects = Rhino.RhinoDoc.ActiveDoc.Objects.GetSelectedObjects(true, true).ToList();
+            RhinoApp.WriteLine(mySelectedObjects.Count.ToString());
+
+            List<Guid> selIds = new List<Guid>();
+            foreach (Rhino.DocObjects.RhinoObject obj in mySelectedObjects)
+            {
+                if (myInterop.allGuids != null)
+                {
+                    if (myInterop.allGuids.Exists(x => x == obj.Id))
+                    {
+                        RhinoApp.WriteLine("It's in the tree.");
+                        selIds.Add(obj.Id);
+
+                    }
+                    else
+                    {
+                        RhinoApp.WriteLine("It's NOT in the tree.");
+                    }
+                }
+                else
+                {
+                    RhinoApp.WriteLine("NOTHING is in the tree.");
+                }
+            }
+
+            if (selIds.Count > 0)
+            {
+                displayObjInTheTree_bool = true;
+                displayObjInTheTree = new ObjectsInTheTree();
+                displayObjInTheTree.Ids = selIds;
+                displayObjInTheTree.Enabled = true;
+                Rhino.RhinoDoc.ActiveDoc.Views.Redraw();
+                var script = string.Format("window.bus.$emit('{0}', '{1}')", "my-selected-ids", JsonConvert.SerializeObject(selIds));
+                Browser.GetMainFrame().EvaluateScriptAsync(script);
+            }
         }
 
         /// <summary>
         /// Called when objects are deselected
         /// </summary>
-        public static void OnDeselectObjects(object sender, Rhino.DocObjects.RhinoObjectSelectionEventArgs e)
+        public void OnDeselectObjects(object sender, Rhino.DocObjects.RhinoObjectSelectionEventArgs e)
         {
             DebugWriteMethod();
+            RhinoApp.WriteLine("Deselected");
+            if (displayObjInTheTree_bool == null)
+            {
+            }
+            else
+            {
+                displayObjInTheTree.Enabled = false;
+                Rhino.RhinoDoc.ActiveDoc.Views.Redraw();
+            }
         }
 
         /// <summary>
         /// Called when all objects are deselected
         /// </summary>
-        public static void OnDeselectAllObjects(object sender, Rhino.DocObjects.RhinoDeselectAllObjectsEventArgs e)
+        public void OnDeselectAllObjects(object sender, Rhino.DocObjects.RhinoDeselectAllObjectsEventArgs e)
         {
             DebugWriteMethod();
+            RhinoApp.WriteLine("DeselectedAll");
+            if (displayObjInTheTree_bool == null)
+            {
+            }
+            else
+            {
+                displayObjInTheTree.Enabled = false;
+                Rhino.RhinoDoc.ActiveDoc.Views.Redraw();
+            }
         }
 
         #endregion
@@ -496,7 +691,7 @@ namespace SchemaBuilder
 #if DEBUG
             var class_name = MethodBase.GetCurrentMethod().DeclaringType.Name;
             var method_name = new StackTrace().GetFrame(1).GetMethod().Name;
-            RhinoApp.WriteLine("** EVENT: {0}.{1} **", class_name, method_name);
+            //RhinoApp.WriteLine("** EVENT: {0}.{1} **", class_name, method_name);
 #endif
         }
     }

@@ -1,0 +1,212 @@
+<#@ assembly name="System.Xml" #>
+<#@ assembly name="System.Core.dll" #>
+<#@ assembly name="$(SolutionDir)CodeTemplates\Komon\Komon.TextTemplates.dll" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ import namespace="System.Xml.Serialization" #>
+<#@ import namespace="System.Diagnostics" #>
+<#@ import namespace="System.ComponentModel" #>
+<#@ import namespace="System.IO" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System.CodeDom.Compiler" #>
+<#@ import namespace="System.Linq" #><#+
+
+
+public void WriteRestClient(string serviceInterface, string fileName, string nameSpace)
+{
+var clientName = serviceInterface.TrimStart('I').Replace("Service","Client") + "RestClient";
+
+var interfacet = Komon.TextTemplates.GetInterfaces(fileName).Where(x=>x.Name == serviceInterface).Single();
+
+var met = (from m in interfacet.Methods
+                         select new
+                         {
+                             Name = m.Name,
+                             Return = m.Return,
+							 IsTask = m.Return.StartsWith("Task") ,
+							 ReturnTask = m.Return.StartsWith("Task<") && m.Return.EndsWith(">>") ? m.Return.Replace("Task<","").Replace(">>",">") : 
+							              m.Return.StartsWith("Task<") ? m.Return.Replace("Task<","").Replace(">","") : 
+									      m.Return, 
+                             Params = string.Join(",",m.Parameters.Select(x=>string.Format("{0} {1}",x.Type,x.Name))),
+                             ParamNames = string.Join(",", m.Parameters.Select(x => string.Format("{0}",x.Name))),
+                             ParamTypes = string.Join(",", m.Parameters.Select(x => string.Format("{0}", x.Type))),
+							 ParamSerial =  m.Parameters.Select((x,i) => string.Format("if({0} != default({1})) ps.Add(\"{0}\", KomonFramework.Serialize.ToJson({0}));", x.Name,x.Type)),
+                         }
+                         ).ToList();
+#>
+#region <#= serviceInterface #>  Client
+namespace <#= nameSpace #>
+{
+	using System;
+	using Komon.Contract.Client;
+    using Komon.Framework;
+    using Komon.Contract.Service;
+	using Komon.Client;
+	using System.Collections.Generic;
+	using Komon.Contract;
+	using Komon;
+	using System.Linq;
+	using System.Threading;
+	using System.Threading.Tasks;
+
+    [KomonExport(typeof(IRegisterService<IKomonService>))]
+    internal class Register<#= clientName #> : IRegisterService<<#= serviceInterface #>>
+    {
+        
+        public string GetEndPointName(KomonSystem system) { return ""; }
+        public <#= serviceInterface #> Create(ClientContext context) { return new <#= clientName #>(context); }
+        public ClientType Type { get { return ClientType.Rest; }}
+    }
+
+	internal class <#= clientName #> : RestClientBase<<#= serviceInterface #>> , <#= serviceInterface #> 
+	{
+		public <#= clientName #>(ClientContext context) : base(context){}
+		
+<#+
+	foreach(var m in met)
+	{
+#>
+		public <#+ Write(m.Return.StartsWith("Task<") ? "async" : "");#> <#+ Write(m.Return=="void" ? "void" : m.Return);#>  <#+ Write(m.Name); #>(<#+ Write(m.Params); #>)
+        { 
+		    var ps = new Dictionary<string,string>();
+<#+
+			foreach(var ser in m.ParamSerial)
+			{
+#>
+            <#=ser#>
+<#+
+			}
+			if(m.Return.StartsWith("Task<"))
+			{
+			if(m.Return == "void") 
+			{
+			#>
+			return base.CallService(ps,"<#= serviceInterface#>","<#= m.Name #>").ContinueWith(x => { });
+			<#+
+			}
+			else if (m.ReturnTask.Contains("DisposableEnumerable<"))
+			{
+			#>
+			var res = await base.CallService(ps,"<#= serviceInterface#>","<#= m.Name #>",isSeq:true); 
+			<#+ var seqType = m.ReturnTask.Replace(">","").Replace("DisposableEnumerable<",""); #>
+			var seq = ((DisposableEnumerable<byte[]>)res);
+			return new DisposableEnumerable<<#= seqType #>>(seq.SelectMany(y=> ParseResponse<List<<#= seqType #>>>(y)),seq);
+			<#+
+			}
+			else
+			{
+			#>
+			var res = await base.CallService(ps,"<#= serviceInterface#>","<#= m.Name #>");
+			return ParseResponse<<#= m.ReturnTask #>>((byte[])res); 
+			<#+
+			}
+			}
+			else
+			{
+			
+#>		    <#+ if(m.Return != "void") Write("var res = "); #>base.CallService(ps,"<#= serviceInterface#>","<#= m.Name #>")<#+ if(m.Return != "void") Write(";"); else Write(".Wait();"); #> 
+			<#+ if(m.Return != "void") Write("return KomonFramework.Serialize.FromJsonBin<"+m.Return+">((byte[])res.Result);"); #> 
+<#+
+			}
+#>
+	}
+<#+
+
+	}
+#>
+	}
+}
+#endregion <#= serviceInterface #>  Client
+<#+
+ var baseServ = serviceInterface;
+ serviceInterface = serviceInterface.Replace("Service","Client");
+ clientName = clientName + "Async";
+#>
+#region <#= serviceInterface #>  Client
+namespace <#= nameSpace #>
+{
+	using System;
+	using Komon.Contract.Client;
+    using Komon.Framework;
+    using Komon.Contract.Service;
+	using Komon.Client;
+	using System.Collections.Generic;
+	using System.Threading.Tasks;
+	using Komon.Contract;
+	using Komon;
+	using System.Linq;
+	using System.Threading;
+
+    [KomonExport(typeof(IRegisterService<IKomonService>))]
+    internal class Register<#= clientName #> : IRegisterService<<#= serviceInterface #>>
+    {
+        
+        public string GetEndPointName(KomonSystem system) { return ""; }
+        public <#= serviceInterface #> Create(ClientContext context) { return new <#= clientName #>(context); }
+        public ClientType Type { get { return ClientType.Rest; }}
+    }
+
+	internal class <#= clientName #> : RestClientBase<<#= serviceInterface #>> , <#= serviceInterface #> 
+	{
+		public <#= clientName #>(ClientContext context) : base(context){}
+		
+<#+
+	foreach(var m in met)
+	{
+#>
+		public async <#+ Write(m.Return=="void"  || m.Return == "Task" ? "Task" : "Task<"+m.ReturnTask + ">");#>  <#+ Write(m.Name); #>(<#+ Write(m.Params); if(m.IsTask){ if(m.Params.Count() > 0) Write(",");  Write("CancellationToken token = default(CancellationToken)"); } #>)
+        { 
+			<#+
+			if(!m.IsTask)
+				Write("var token = default(CancellationToken);");
+			#>
+		    var ps = new Dictionary<string,string>();
+<#+
+			foreach(var ser in m.ParamSerial)
+			{
+#>
+            <#=ser#>
+<#+
+		}
+			//return base.CallService(ps, "IUserManagementService", "SignOut").ContinueWith(x => { });
+            //return      CallService(ps, "", "")                             .ContinueWith(x => ParseResponse<Komon.Contract.LogOnResponse>(x.Result));
+			if(m.Return == "void") 
+			{
+			#>
+			await base.CallService(ps,"<#= baseServ#>","<#= m.Name #>", token);
+			<#+
+			}
+			else if (m.ReturnTask.Contains("DisposableEnumerable<"))
+			{
+			#>
+			var res = await base.CallService(ps,"<#= baseServ#>","<#= m.Name #>",token,true);
+			<#+ var seqType = m.ReturnTask.Replace(">","").Replace("DisposableEnumerable<",""); #>
+			var seq = ((DisposableEnumerable<byte[]>)res);
+			return new DisposableEnumerable<<#= seqType #>>(seq.SelectMany(y=> ParseResponse<List<<#= seqType #>>>(y)),seq);
+			<#+
+			}
+			else if (m.Return == "Task")
+			{
+			#>
+			await base.CallService(ps,"<#= baseServ#>","<#= m.Name #>",token);
+			<#+
+			}
+			else
+			{
+			#>
+			var res = await base.CallService(ps,"<#= baseServ#>","<#= m.Name #>",token);
+			return ParseResponse<<#= m.ReturnTask #>>((byte[])res); 
+			<#+
+			}
+			#>
+		}
+
+<#+
+
+	}
+#>
+	}
+}
+#endregion <#= serviceInterface #> Client
+<#+
+}
+#>

@@ -1,0 +1,213 @@
+<#@ assembly name="$(SolutionDir)CodeTemplates\Komon\Komon.TextTemplates.dll" #>
+<#@ assembly name="System.Xml" #>
+<#@ assembly name="System.Xml.Linq" #>
+<#@ assembly name="System.Core.dll" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Xml.Linq" #>
+<#+
+public void GenerateInterfaces(string edmx,string nspace,string enspace,string eassembly)
+{
+
+
+    var edmxInfo = Komon.Edmx.Parse(edmx,enspace + ".");
+	var entities = edmxInfo.Entities;
+	var entitiesName = edmxInfo.EntitiesName;
+	var storageSchema = edmxInfo.StorageSchema;
+	var associations = edmxInfo.Associations;
+#>
+using Komon.DataAccess;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Data.Entity;
+using System.Data.Entity.Core.Objects;
+using <#= enspace #>;
+namespace <#= nspace#>
+{
+	#region Context
+	///<summary>
+	///
+	///</summary>
+	public partial interface I<#= entitiesName#> : IKomonEntities
+	{
+<#+
+foreach(var ent in entities)
+{
+	if(ent.IsAudit)
+	{
+#>
+		///<summary>
+		/// <#= ent.Documentation #>
+		///</summary>
+		IAuditEntitySet<<#= ent.TypeName #>, <#= ent.TypeName #>Audit> <#= ent.SetName #> { get; }
+<#+
+	} 
+	else if(ent.IsHistory)
+	{
+#>
+		///<summary>
+		/// <#= ent.Documentation #>
+		///</summary>
+		IHistoryEntitySet<<#= ent.TypeName #>, <#= ent.TypeName #>History> <#= ent.SetName #> { get; }
+<#+
+	}
+	else
+	{
+#>
+		///<summary>
+		/// <#= ent.Documentation #>
+		///</summary>
+		IKomonEntitySet<<#= ent.TypeName #>> <#= ent.SetName #> { get; }
+<#+
+	}
+}
+#>
+	}
+	internal partial class <#= entitiesName#> : KomonEntitiesBase, I<#= entitiesName#>
+	{
+	    public <#= entitiesName#>()
+            : base("name=<#= entitiesName#>")
+        {
+        }
+    	public <#= entitiesName#>(string name)
+            : base(name)
+        {
+        }
+		protected override string EntitiesAssembly { get { return "<#= eassembly #>";}}
+
+
+	     protected override void OnModelCreating(System.Data.Entity.DbModelBuilder modelBuilder)
+		{
+			<#+
+			foreach(var ent in entities)
+			{
+			#>
+				 
+	        modelBuilder.Entity<<#=ent.TypeName#>>().ToTable("<#=ent.SetName#>", "<#= storageSchema#>");
+<#+
+			if(ent.IsObjectBase)
+			{
+			#>
+            modelBuilder.Entity<<#=ent.TypeName#>>().Property(x=>x.Version).IsConcurrencyToken();
+<#+
+			}
+			
+			#>
+			modelBuilder.Entity<<#=ent.TypeName#>>().HasKey(x=> new { <#+ Write(string.Join(", ", ent.Ids.Select(x=> "x." + x))); #> });
+<#+
+			
+			foreach(var prop in ent.Properties)
+			{
+			if(prop.DbNullable != "true")
+			{
+			#>
+            modelBuilder.Entity<<#=ent.TypeName#>>().Property(x=>x.<#=prop.ClrName#>).IsRequired();
+<#+
+			}
+			if(prop.ClrType == "String" && !prop.DbType.Contains("max") && prop.DbType != "char" && prop.DbType.Contains("("))
+			{
+			#>
+            modelBuilder.Entity<<#=ent.TypeName#>>().Property(x=>x.<#=prop.ClrName#>).HasMaxLength(<#=prop.DbType.Replace("nvarchar(","").Replace("varchar(","").Replace(")","") #>);
+<#+
+			}
+			}
+			if(ent.Ids.Count == 1 && (ent.Ids[0] == "RmId" || ent.Ids[0] == "Id"))
+			{
+			#>
+            //modelBuilder.Entity<<#=ent.TypeName#>>().Property(x=>x.<#=ent.Ids[0]#>).HasDatabaseGeneratedOption(System.ComponentModel.DataAnnotations.Schema.DatabaseGeneratedOption.None);
+<#+
+			}
+			if(ent.IsAudit)
+			{
+			#>
+
+            modelBuilder.Entity<<#=ent.TypeName#>Audit>().HasKey(x => new { x.Id,x.Version }).ToTable("<#=ent.TypeName.Replace(enspace + ".","")#>Audits", "<#= storageSchema#>");
+<#+
+			foreach(var prop in ent.Properties)
+			{
+			if(prop.DbNullable != "true")
+			{
+			#>
+            modelBuilder.Entity<<#=ent.TypeName#>Audit>().Property(x=>x.<#=prop.ClrName#>).IsRequired();
+<#+
+			}
+			}
+			}
+			}
+			#>
+
+			<#+
+			foreach(var a in associations)
+			{
+				var req = a.pMult == "1" ? "WithRequired" : "WithOptional";
+#>
+            modelBuilder.Entity<<#=a.pType #>>().HasMany(x => x.<#=a.pName #>).<#=req #>(x => x.<#=a.dName #>).HasForeignKey(x => x.<#=a.dRef #>).WillCascadeOnDelete(false);
+<#+
+			}
+			#>
+		}
+
+
+<#+
+foreach(var ent in entities)
+{
+	if(ent.IsAudit)
+	{
+#>
+		#region <#= ent.SetName #>
+	    public DbSet<<#= ent.TypeName #>> <#= ent.SetName #> { get; set; }
+		public DbSet<<#= ent.TypeName #>Audit> <#= ent.TypeName.Replace(enspace+".","") #>Audits { get; set; }
+		IAuditEntitySet<<#= ent.TypeName #>,<#= ent.TypeName #>Audit> I<#= entitiesName#>.<#= ent.SetName #> 
+		{
+            get
+            {
+               return m<#= ent.SetName #> = m<#= ent.SetName #> ?? new AuditEntitySet<<#= ent.TypeName #>, <#= ent.TypeName #>Audit>(this);
+            }
+        }
+        private AuditEntitySet<<#= ent.TypeName #>, <#= ent.TypeName #>Audit> m<#= ent.SetName #>;
+		#endregion
+<#+
+	}
+	else if (ent.IsHistory)
+	{
+#>
+		#region <#= ent.SetName #>
+		public DbSet<<#= ent.TypeName #>> <#= ent.SetName #> { get; set; }
+		public DbSet<<#= ent.TypeName #>History> <#= ent.TypeName.Replace(enspace+".","") #>History { get; set; }
+		IHistoryEntitySet<<#= ent.TypeName #>,<#= ent.TypeName #>History> I<#= entitiesName#>.<#= ent.SetName #>
+		{
+            get
+            {
+               return m<#= ent.SetName #> = m<#= ent.SetName #> ?? new HistoryEntitySet<<#= ent.TypeName #>, <#= ent.TypeName #>History>(this);
+            }
+        }
+        private HistoryEntitySet<<#= ent.TypeName #>, <#= ent.TypeName #>History> m<#= ent.SetName #>;
+		#endregion
+<#+
+	}
+	else
+	{
+#>
+		#region <#= ent.SetName #>
+		public DbSet<<#= ent.TypeName #>> <#= ent.SetName #> { get; set; }
+		IKomonEntitySet<<#= ent.TypeName #>> I<#= entitiesName#>.<#= ent.SetName #>
+		{
+            get
+            {
+               return m<#= ent.SetName #> = m<#= ent.SetName #> ?? new KomonEntitySet<<#= ent.TypeName #>>(this);
+            }
+        }
+        private KomonEntitySet<<#= ent.TypeName #>> m<#= ent.SetName #>;
+		#endregion
+<#+
+	}
+}
+#>
+	
+	}
+	#endregion
+}
+<#+
+
+}
+#>

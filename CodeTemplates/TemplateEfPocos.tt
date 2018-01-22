@@ -1,0 +1,196 @@
+<#@ assembly name="$(SolutionDir)CodeTemplates\Komon\Komon.TextTemplates.dll" #>
+<#@ assembly name="System.Xml" #>
+<#@ assembly name="System.Xml.Linq" #>
+<#@ assembly name="System.Core.dll" #>
+<#@ assembly name="EnvDTE" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Xml.Linq" #>
+<#+
+public void GenerateEntities(string edmx,string nspace)
+{
+    var edmxInfo = Komon.Edmx.Parse(edmx,"");
+	var entities = edmxInfo.Entities;
+#>
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using Komon.Contract.Entities;
+namespace <#= nspace#>
+{
+	
+
+	#region Entities
+<#+
+foreach(var ent in entities.Where(x=> !x.IsAudit && !x.IsHistory))
+{
+#>
+    ///<summary>
+	/// <#= ent.Documentation #>
+	///</summary>
+	public sealed partial class <#= ent.TypeName #> : <#= ent.IsObjectBase ? "EntityBase" : "KomonEntity" #>
+	{
+	    ///<summary>
+	    /// 
+	    ///</summary>
+	    public <#= ent.TypeName #>()
+		{
+<#+
+foreach(var prop in ent.NavigationProperties.Where(x=>x.Type.StartsWith("HashSet<")))
+{
+#>
+              this.<#=prop.Name #> = new <#=prop.Type#>();
+<#+
+}
+#>
+		}
+
+<#+
+	foreach(var prop in ent.Properties.Where(x=>!ent.IsObjectBase || !x.IsBase))
+	{
+#>
+		///<summary>
+		/// <#= prop.Documentation #>
+		///</summary>
+		public <#=prop.ClrType#> <#=prop.ClrName #> {get; set;}
+<#+
+	}
+	foreach(var prop in ent.NavigationProperties)
+	{
+#>
+		///<summary>
+		/// <#= prop.Documentation #>
+		///</summary>
+		public <#=prop.Type#> <#=prop.Name #> {get; set;}
+<#+
+	}
+#>
+	}
+<#+
+}
+#>
+    #endregion
+
+	#region History Entities
+<#+
+foreach(var ent in entities.Where(x=> x.IsHistory))
+{
+#>
+    ///<summary>
+	/// <#= ent.Documentation #>
+	///</summary>
+	public sealed partial  class <#= ent.TypeName #>History : HistoryEntity 
+	{
+<#+
+	foreach(var prop in ent.Properties)
+	{
+#>
+		///<summary>
+		/// <#= prop.Documentation #>
+		///</summary>
+		public <#=prop.ClrType#> <#=prop.ClrName #> {get; set;}
+<#+
+	}
+#>
+	}
+	
+	///<summary>
+	/// <#= ent.Documentation #>
+	///</summary>
+	public partial interface <#= ent.TypeName #> : HistoryEnabledEntity
+	{
+<#+
+	foreach(var prop in ent.Properties)
+	{
+#>
+		///<summary>
+		/// <#= prop.Documentation #>
+		///</summary>
+		public <#=prop.ClrType#> <#=prop.ClrName #> {get; set;}
+<#+
+	}
+#>
+	}
+<#+
+}
+#>
+	#endregion
+
+	#region Audit Entities
+<#+
+foreach(var ent in entities.Where(x=> x.IsAudit))
+{
+#>
+	
+	///<summary>
+	/// <#= ent.Documentation #>
+	///</summary>
+	public sealed partial  class <#= ent.TypeName #>Audit : AuditEntity 
+	{
+
+	
+
+<#+
+	foreach(var prop in ent.Properties.Where(x=> !x.IsBase))
+	{
+#>
+		///<summary>
+		/// <#= prop.Documentation #>
+		///</summary>
+		public <#=prop.ClrType#> <#=prop.ClrName #> {get; set;}
+<#+
+	}
+#>
+	}
+	
+	///<summary>
+	/// <#= ent.Documentation #>
+	///</summary>
+	public sealed partial  class <#= ent.TypeName #> : AuditEnabledEntity 
+	{
+	 ///<summary>
+	 /// 
+	 ///</summary>
+	 public <#= ent.TypeName #>()
+		{
+<#+
+foreach(var prop in ent.NavigationProperties.Where(x=>x.Type.StartsWith("HashSet<")))
+{
+#>
+              this.<#=prop.Name #> = new <#=prop.Type#>();
+<#+
+}
+#>
+		}
+
+<#+
+	foreach(var prop in ent.Properties.Where(x=> !x.IsBase))
+	{
+#>
+		///<summary>
+		/// <#= prop.Documentation #>
+		///</summary>
+		public <#=prop.ClrType#> <#=prop.ClrName #> {get; set;}
+<#+
+	}
+	foreach(var prop in ent.NavigationProperties)
+	{
+#>
+		///<summary>
+		/// <#= prop.Documentation #>
+		///</summary>
+		public <#=prop.Type#> <#=prop.Name #> {get; set; }
+<#+
+	}
+#>
+	}
+<#+
+
+}
+#>
+	#endregion
+}
+<#+
+
+
+}
+#>

@@ -7,18 +7,20 @@
       <v-icon class="makeSmall" v-if="isFolder && !open" light color="grey lighten-2">folder</v-icon>
       <v-icon class="makeSmall" v-if="isFolder && open" light color="grey lighten-2">folder_open</v-icon>
       <input v-if="editKey==true" type="text" font-face="Roboto" v-autowidth="{maxWidth: '960px', minWidth: '20px', comfortZone: 0}" @focus="$event.target.select()" id="input" v-model="objectKey" @blur="editKey=false" @keyup.enter="editKey=false">
-      <label v-if="editKey==false  && !lock" v-bind:title="messageEditLabel" v-on:mouseover= "isItObject" @dblclick="editTheKey"> {{objectKey}} </label>
-      <label v-if="editKey==false  && lock" class="lockColor" v-bind:title="messageCantEdit"> {{objectKey}} </label>
+      <label v-if="editKey==false && !lock" v-bind:title="messageEditLabel" @mouseover="isItObject" @mouseleave="hideThisObject" @dblclick="editTheKey"> {{objectKey}} </label>
+      <label v-if="editKey==false && lock" class="lockColor" v-bind:title="messageCantEdit"> {{objectKey}} </label>
       <span v-if="!isFolder">:</span>
       <input v-if="editValue==true" type="text" font-face="Roboto" v-autowidth="{maxWidth: '960px', minWidth: '20px', comfortZone: 0}" @focus="$event.target.select()" id="input" v-model="objectValue" @blur="editValue=false" @keyup.enter="editValue=false">
-      <label v-if="editValue==false && !isFolder && !lock" v-bind:title="messageEditLabel" v-on:mouseover= "isItObject" @dblclick="editTheValue"> {{objectValue}} </label>
+      <label v-if="editValue==false && !isFolder && !lock" v-bind:title="messageEditLabel" @mouseover="isItObject" @mouseleave="hideThisObject" @dblclick="editTheValue"> {{objectValue}} </label>
       <label v-if="editValue==false && !isFolder && lock" class="lockColor" v-bind:title="messageCantEdit"> {{objectValue}} </label>
       <span v-if="isFolder && model.children.length > 0" v-show="!open" class="redFont">{...+{{model.children.length}}}</span>
       <span>&nbsp;</span>
+
       <v-tooltip right>
         <v-icon style="cursor: pointer;" @click="show" hover xs1 small flat color="grey lighten-2" class="makeSmall" slot="activator">more_vert</v-icon>
         <span>Options</span>
       </v-tooltip>
+      <v-icon hover xs1 small flat color="grey lighten-1" v-if="this.objectKey=='Id' && this.showObjectsInTree==true && contains(selectedIds, this.objectValue)==true" class="makeSmall">add_box</v-icon>
       <v-menu transition="slide-x-transition" bottom right color="black" v-model="showMenu" absolute :position-x="x" :position-y="y">
         <v-list class="ma-0" dark dense>
           <v-list-tile>
@@ -61,9 +63,10 @@
     </div>
     <ul v-sortable="{ onUpdate: onUpdate }" v-show="open" v-if="isFolder">
       <draggable v-model="model.children" :options="{group:'item', name: 'item', pull:true, sort: true}" @start="drag=true" @end="drag=false" class="drag">
-        <item class="item" v-for="(model, index) in model.children" :model="model" :index='index' @deleteMe='deleteKid'></item>
+        <item class="item" v-for="(model, index) in model.children" :model="model" :index='index' @mouseover="isItObject" @mouseleave="hideThisObject" @deleteMe='deleteKid'></item>
       </draggable>
       <div>
+
         <v-tooltip right>
           <v-icon style="cursor: pointer;" @click="showAddOptions" hover xs1 small flat color="grey lighten-1" class="makeSmall" slot="activator">add_to_photos</v-icon>
           <span>Add...</span>
@@ -129,8 +132,17 @@ export default {
       myProperties: [ ],
       x: 0,
       y: 0,
-      customName: null,
-      myObjectId: null
+      customName: "myRhinoObject",
+      myObjectId: null,
+      showTheObjects: true,
+      showTheGraph: true,
+      objectIds: [ ],
+      GlobalEdges: [ ],
+      GlobalSiblingEdges: [],
+      showObjectsInTree: false,
+      selectedIds: [],
+
+      //myRoot: null,
     }
   },
   computed: {
@@ -142,9 +154,8 @@ export default {
 
 
   methods: {
-    onUpdate( ) {
+    onUpdate( ) {},
 
-    },
     show( e ) {
       e.preventDefault( )
       this.showMenu = false
@@ -153,15 +164,6 @@ export default {
       this.$nextTick( ( ) => {
         this.showMenu = true
       } )
-    },
-
-    isItObject(){
-      if (this.objectKey == "Id"){
-        console.log( this.objectValue )
-        window.bus.$emit( 'myRhinoId', this.objectValue )
-        Interop.showObject(this.objectValue)
-        Interop.showObject2()
-      }
     },
 
     showAddOptions( e ) {
@@ -191,7 +193,14 @@ export default {
         this.open = !this.open
       }
     },
-
+    contains(a, obj) {
+        for (var i = 0; i < a.length; i++) {
+            if (a[i] === obj) {
+                return true;
+            }
+        }
+        return false;
+    },
     unfoldAll( ) {
       if ( open ) {
         open = !open
@@ -226,8 +235,8 @@ export default {
         this.model.children.push( { Key: 'Id', Value: this.myObjectId }, {
           Key: "RhinoProperties",
           Value: "example",
-          children: [
-          ]
+          children: [ ]
+
         } )
         for ( var i = 0; i < this.myProperties.length; i++ ) {
           this.model.children[ 1 ].children.push( {
@@ -238,7 +247,7 @@ export default {
       } else {
         this.model.children.push( {
           Key: this.customName,
-          Value: "ObjectValue",
+          Value: "myRhinoObject",
           children: [
             { Key: 'Id', Value: this.myObjectId },
             {
@@ -255,10 +264,53 @@ export default {
           } )
         }
       }
+      // if(this.showTheObjects && this.model.children[ 0 ].Key == "Id"){
+      //   Interop.showObject( this.model.children[ 0 ].Value)
+      //}
+      if ( this.showTheObjects ) {
+        window.bus.$emit( 'show-me-wut-u-got' )
+      }
+      if ( this.showTheGraph ){
+        window.bus.$emit( 'show-me-the-graph' )
+      }
+      window.bus.$emit('refresh-objects', true)
     },
 
 
 
+    findParentAndNeighbors( myRoot, myValue ) {
+      for ( var i = 0; i < myRoot.children.length; i++ ) {
+        if ( myRoot.children[ i ].children && myRoot.children[ i ].children.length ) {
+          if ( myRoot.children[ i ].children[ 0 ].Key == myValue ) {
+            console.log( myRoot.children[ 0 ].key )
+            console.log( myValue )
+          }
+          this.findParentAndNeighbors( myRoot.children[ i ] )
+        } else {}
+
+      }
+    },
+
+    isItObject( ) {
+      //console.log(this.myRoot)
+      if ( this.model.Value == "myRhinoObject" ) {
+        var AllParentKidRels = [ ]
+        for ( var i = 0; i < this.model.children.length; i++ ) {
+          if ( this.model.children[ i ].Value == "myRhinoObject" ) {
+            var myParentKidRel = [ ]
+            myParentKidRel.push( this.model.children[ 0 ].Value )
+            myParentKidRel.push( this.model.children[ i ].children[ 0 ].Value )
+            AllParentKidRels.push( myParentKidRel )
+          }
+        }
+        console.log( JSON.stringify( AllParentKidRels ) )
+        Interop.showHoveredGraph( this.model.children[ 0 ].Value, JSON.stringify( AllParentKidRels ) )
+      }
+    },
+
+    hideThisObject( ) {
+      Interop.hideHoveredGraph( )
+    },
 
     addSibling( ) {
       this.model.children.push( {
@@ -283,10 +335,74 @@ export default {
       } );
     },
 
+    collectGUIDs( myModel ) {
+      for ( var i = 0; i < myModel.children.length; i++ ) {
+        if ( myModel.children[ i ].children && myModel.children[ i ].children.length ) {
+          this.collectGUIDs( myModel.children[ i ] )
+        } else if ( myModel.children[ i ].Key == "Id" ) {
+          this.objectIds.push( myModel.children[ i ].Value )
+        } else {}
+      }
+    },
 
+    collectTheEdges( myModel ) {
+      for ( var i = 0; i < myModel.children.length; i++ ) {
+        if ( myModel.children[ i ].children && myModel.children[ i ].children.length ) {
+          this.collectTheEdges( myModel.children[ i ] )
+        } else if ( myModel.Value == "myRhinoObject" ) {
+
+          var siblingEdges = []
+
+          for ( var i = 0; i < myModel.children.length; i++ ) {
+            if ( myModel.children[ i ].Value == "myRhinoObject" ) {
+              siblingEdges.push(myModel.children[ i ].children[ 0 ].Value)
+              var myParentKidRel = [ ]
+              myParentKidRel.push( myModel.children[ 0 ].Value )
+              myParentKidRel.push( myModel.children[ i ].children[ 0 ].Value )
+              this.GlobalEdges.push( myParentKidRel )
+              this.collectTheEdges( myModel.children[ i ] )
+            }
+          }
+
+          if (siblingEdges.length > 1){
+            this.GlobalSiblingEdges.push(siblingEdges)
+          }           
+        } else {}
+      }
+    },
+
+    showMeTheObjects( ) {
+      //if ( this.model.Value == "SchemaBuilder" ) {
+      Interop.hideObjects( )
+      this.objectIds = [ ]
+      this.collectGUIDs( this.model )
+      //console.log( this.objectIds )
+      Interop.showObjects( JSON.stringify( this.objectIds ) )
+    },
+
+    showMeTheGraph(){
+      Interop.hideEdges( ) // works that way...
+      this.GlobalEdges = [ ]
+      this.GlobalSiblingEdges = [ ]
+      this.collectTheEdges( this.model )
+      console.log(this.GlobalEdges)
+      console.log(this.GlobalSiblingEdges)
+      Interop.showEdges(JSON.stringify(this.GlobalEdges))
+    }
   },
 
   mounted( ) {
+
+    window.bus.$on( 'show-me-wut-u-got', state => {
+      if ( this.showTheObjects && this.model.Value == "SchemaBuilder" ) {
+        this.$nextTick( this.showMeTheObjects( ) )
+      }
+    } )
+    window.bus.$on( 'show-me-the-graph', state => {
+      if ( this.showTheGraph && this.model.Value == "SchemaBuilder" ) {
+        this.$nextTick( this.showMeTheGraph( ) )
+      }
+    } )
     window.bus.$on( 'fold-global', state => {
       this.open = state
     } )
@@ -305,7 +421,35 @@ export default {
     window.bus.$on( 'obj-Id', state => {
       this.myObjectId = state
     } )
-  }
+    window.bus.$on( 'show-global-objects', state => {
+        this.showTheObjects = state
+        if ( state == true && this.model.Value == "SchemaBuilder" ) {
+          this.$nextTick( this.showMeTheObjects( ) )
+        } else if ( state == false ) {
+          Interop.hideObjects( )
+        }
+      })
+    window.bus.$on( 'show-rel', state => {
+        this.showTheGraph = state
+        if ( state == true && this.model.Value == "SchemaBuilder" ) {
+          this.$nextTick( this.showMeTheGraph( ) )
+        } else if ( state == false ) {
+          Interop.hideEdges( )
+        }
+      } )
+   window.bus.$on( 'my-selected-ids', state => {
+      this.showObjectsInTree = false;
+      this.showObjectsInTree = true;
+      this.selectedIds = JSON.parse( state );
+      console.log(this.selectedIds)
+
+
+    } )
+
+  
+
+},
+
 }
 </script>
 <style>

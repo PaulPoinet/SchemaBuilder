@@ -1,0 +1,69 @@
+<#@ assembly name="System.Xml" #>
+<#@ assembly name="System.Core.dll" #>
+<#@ assembly name="$(SolutionDir)CodeTemplates\Komon\Komon.TextTemplates.dll" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ import namespace="System.Xml.Serialization" #>
+<#@ import namespace="System.Diagnostics" #>
+<#@ import namespace="System.ComponentModel" #>
+<#@ import namespace="System.IO" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System.CodeDom.Compiler" #>
+<#@ import namespace="System.Linq" #><#+
+
+public void WriteClientInterface(string serviceInterface, string fileName, string nameSpace)
+{  
+    var interfacet = Komon.TextTemplates.GetInterfaces(fileName).Where(x=>x.Name == serviceInterface).Single();
+
+	var met = (from m in interfacet.Methods
+               select new
+               {
+					Name = m.Name.Replace("Komon.Komon.","Komon."),
+					Return = m.Return.Replace("Komon.Komon.","Komon."),
+					IsTask = m.Return.StartsWith("Task"),
+					Params = string.Join(",",m.Parameters.Select(x=>string.Format("{0} {1}",x.Type,x.Name))).Replace("Komon.Komon.","Komon."),
+					ParamNames = string.Join(",", m.Parameters.Select(x => string.Format("{0}",x.Name))).Replace("Komon.Komon.","Komon."),
+                    ParamTypes = string.Join(",", m.Parameters.Select(x => string.Format("{0}", x.Type))).Replace("Komon.Komon.","Komon."),
+               }
+               ).ToList();
+
+	var type = new {Name = serviceInterface};
+	
+
+	var externalAsyncInterface = serviceInterface.Replace("Service","Client");
+	
+#>
+#region <#= externalAsyncInterface #>
+namespace <#=nameSpace #>
+{
+	using System;
+	using Komon.Framework;
+	using System.Threading.Tasks;
+	using System.ServiceModel;
+	using Komon.Contract;
+	using Komon.Contract.Client;
+	using Komon.Contract.Service;
+	using System.Threading;
+	using System.Collections.Generic;
+	/// <summary>
+	/// 
+	/// </summary>
+	public interface <#= externalAsyncInterface #> :IKomonService
+	{
+<#+
+foreach(var m in met)
+{
+#>
+		/// <summary>
+		/// 
+		/// </summary>
+		<#+ Write(m.Return=="void" || m.Return == "Task" ? "Task" : 
+		          m.Return.StartsWith("Task<") ? m.Return : "Task<" +m.Return + ">");#>  <#+ Write(m.Name); #>(<#+ Write(m.Params); if(m.IsTask){ if(m.Params.Count() > 0) Write(",");  Write("CancellationToken token = default(CancellationToken)"); } #>);
+<#+
+}
+#>
+	}
+}
+#endregion <#= externalAsyncInterface #>
+<#+
+}
+#>

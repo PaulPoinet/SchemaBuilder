@@ -58,7 +58,7 @@ export default {
       dialog: false,
       props: [ ],
       myDict: null,
-      inputText: null,
+      inputText: "myRhinoObject",
     }
   },
 

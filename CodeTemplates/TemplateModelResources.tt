@@ -1,0 +1,550 @@
+<#@ assembly name="System.Xml" #>
+<#@ assembly name="System.Core.dll" #>
+<#@ assembly name="System.Xml.Linq" #>
+<#@ assembly name="$(SolutionDir)CodeTemplates\Komon\Komon.TextTemplates.dll" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ import namespace="System.Xml.Serialization" #>
+<#@ import namespace="System.Diagnostics" #>
+<#@ import namespace="System.ComponentModel" #>
+<#@ import namespace="System.IO" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System.CodeDom.Compiler" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Xml.Linq" #><#+
+
+public void WriteModuleResources(string resourceName, string ns)
+{  
+	
+    var fileName = Komon.TextTemplates.SolutionDir + resourceName;
+
+	var xml = XElement.Load(fileName);
+
+	var module = xml.Attribute("name").Value as string;
+
+	var actions = xml.Descendants("Action")
+	                 .Select(x=>new
+				     {
+					      Name = x.Attribute("name").Value as string,
+						  DisplayName = x.Attribute("displayName") != null ? (string)x.Attribute("displayName").Value : (string)x.Attribute("name").Value,
+						  Description = x.Attribute("description").Value as string,
+						  IsAvailableToUsers = x.Attribute("isAvailableToUsers").Value as string,
+					 }).ToList();
+    
+	var languageTags = xml.Descendants("LanguageTag")
+	                      .Select(x=>new
+						  {
+						 	  Name = x.Attribute("name").Value as string,
+						 	  Description = x.Attribute("description").Value as string,
+							  DefaultValue = x.Attribute("defaultValue").Value as string,
+						 	  IsEditable = x.Attribute("isEditable").Value as string,
+						  }).ToList();
+
+    var parameters   = xml.Descendants("Parameter")
+	                      .Select(x=>new
+						  {
+						 	  Name = x.Attribute("name").Value as string,
+						 	  Description = x.Attribute("description").Value as string,
+						 	  IsEditable = x.Attribute("isEditable").Value as string,
+							  TypeName = x.Attribute("typeName").Value as string,
+							  DefaultValue = x.Attribute("defaultValue").Value as string,
+							  GenerateSet = bool.Parse(x.Attribute("generateSet") == null ? "false" : (string)x.Attribute("generateSet").Value)
+						  }).ToList();
+
+   
+    var trends       = xml.Descendants("Trend")
+	                      .Select(x=>new
+						  {
+						 	  Name = x.Attribute("name").Value as string,
+						 	  Description = x.Attribute("description").Value as string,
+						 	  ActionName = x.Attribute("actionName").Value as string,
+							  AggregateType = x.Attribute("aggregateType").Value as string,
+							  ValueType = x.Attribute("valueType").Value as string,
+							  IsAutoGeneratingSeries = x.Attribute("isAutoGeneratingSeries").Value as string,
+							  IsActive = x.Attribute("isActive").Value as string,
+							  AccuracyType = x.Attribute("accuracyType").Value as string,
+							  
+						  }).ToList();
+
+    var maps         = xml.Descendants("Map")
+	                      .Select(x=>new
+						  {
+						 	  Name = x.Attribute("name").Value as string,
+						 	  Description = x.Attribute("description").Value as string,
+						 	  FromType = x.Attribute("fromType").Value as string,
+							  ToType = x.Attribute("toType").Value as string,
+						  }).ToList();
+
+    var categories   = xml.Descendants("Category")
+	                      .Select(x=>new
+						  {
+						 	  Name = x.Attribute("name").Value as string,
+						 	  Description = x.Attribute("description").Value as string,
+						 	  DisplayName = x.Attribute("displayName").Value as string,
+							  Items = x.Descendants("CategoryItem").Select(y=>new
+							  {
+							       Name = y.Attribute("name").Value as string,
+						 	       Description = y.Attribute("description").Value as string,
+						 	       DisplayName = y.Attribute("displayName").Value as string,
+							  }).ToList()
+						  }).ToList();
+
+
+	
+   
+    
+
+    var workflows    = xml.Descendants("Workflow")
+	                      .Select(x=>new
+						  {
+						 	  Name = x.Attribute("name").Value as string,
+						 	  Description = x.Attribute("description").Value as string,
+						 	  DisplayName = x.Attribute("displayName").Value as string,
+							  ActionName = x.Attribute("actionName").Value as string,
+							  IsDaily = x.Attribute("isDaily").Value as string,
+							  RestartExecution = x.Attribute("restartExecution").Value as string,
+							  Interval = x.Attribute("interval").Value as string,
+							  StartTime = x.Attribute("startTime").Value as string,
+							  Items = x.Descendants("WorkflowItem").Select(y=>new
+							  {
+							       Index = y.Attribute("index").Value as string,
+							       Name = y.Attribute("name").Value as string,
+						 	       Description = y.Attribute("description").Value as string,
+						 	       DisplayName = y.Attribute("displayName").Value as string,
+							  }).ToList()
+						  }).ToList();
+
+#>
+#region Constants <#= module#>Module
+namespace <#=ns #>
+{
+	/// <summary>
+	/// A class containing constants of names used to specify actions, parameters and language items
+	/// </summary>
+	public static class <#= module#>Module
+	{
+	    /// <summary>
+        /// Name of the Module
+        /// </summary>
+        public const string Name = "<#= module#>";
+
+		/// <summary>
+        /// Defined actions in the module
+        /// </summary>
+        public static class Actions
+        {
+<#+		
+		    actions.ForEach(x=> 
+			{
+			    WriteLine(string.Format("            /// <summary>{0}</summary> ",x.Description));
+				WriteLine(string.Format(@"            public const string {0} = ""{0}"";",x.Name));
+			});
+#>
+		}
+
+		/// <summary>
+        /// Defined languagetags in the module
+        /// </summary>
+        public static class LanguageTags
+        {
+<#+		
+		    languageTags.ForEach(x=> 
+			{
+			    WriteLine(string.Format("            /// <summary>{0}</summary> ",x.Description));
+				WriteLine(string.Format(@"            public const string {0} = ""{0}"";",x.Name));
+			});
+#>
+		}
+
+		/// <summary>
+        /// Defined parameters in the module
+        /// </summary>
+        public static class Parameters
+        {
+<#+		
+		    parameters.ForEach(x=> 
+			{
+			    WriteLine(string.Format("            /// <summary>{0}</summary> ",x.Description));
+				WriteLine(string.Format(@"            public const string {0} = ""{0}"";",x.Name));
+			});
+#>
+		}
+
+		/// <summary>
+        /// Defined Trends in the module
+        /// </summary>
+        public static class Trends
+        {
+<#+		
+		    trends.ForEach(x=> 
+			{
+			    WriteLine(string.Format("            /// <summary>{0}</summary> ",x.Description));
+				WriteLine(string.Format(@"            public const string {0} = ""{0}/"";",x.Name));
+			});
+#>
+		}
+		
+		/// <summary>
+        /// Defined Maps in the module
+        /// </summary>
+        public static class Maps
+        {
+<#+		
+		    maps.ForEach(x=> 
+			{
+			    WriteLine(string.Format("            /// <summary>{0}</summary> ",x.Description));
+				WriteLine(string.Format(@"            public const string {0} = ""{0}"";",x.Name));
+			});
+#>
+		}
+		
+		/// <summary>
+        /// Defined Categories in the module
+        /// </summary>
+        public static class Categories
+        {
+<#+		
+		    categories.ForEach(x=> 
+			{
+			    WriteLine(string.Format("            /// <summary>{0}</summary> ",x.Description));
+				WriteLine(string.Format(@"            public const string {0} = ""{0}"";",x.Name));
+				if(x.Items.Count > 0)
+				{
+				     WriteLine(string.Format("            /// <summary>Defined items in the {0} category</summary>",x.Name));
+				     WriteLine(string.Format(@"            public static class {0}s",x.Name));
+				     WriteLine(@"            {");
+				     x.Items.ForEach(y=>
+				     {
+				         WriteLine(string.Format("                /// <summary>{0}</summary> ",y.Description));
+     			     	 WriteLine(string.Format(@"                public const string {0} = ""{1}"";",y.Name.Replace(".",""),y.Name));
+				     }); 
+				     WriteLine(@"            }");
+				}
+			});
+#>
+		}
+
+	    /// <summary>
+        /// Defined Workflows in the module
+        /// </summary>
+        public static class Workflows
+        {
+<#+		
+		    workflows.ForEach(x=> 
+			{
+			    WriteLine(string.Format("            /// <summary>{0}</summary> ",x.Description));
+				WriteLine(string.Format(@"            public const string {0} = ""{0}"";",x.Name));
+				if(x.Items.Count > 0)
+				{
+				     WriteLine(string.Format("            /// <summary>Defined steps in the {0}</summary>",x.DisplayName));
+				     WriteLine(string.Format(@"            public static class {0}Steps",x.Name));
+				     WriteLine(@"            {");
+				     x.Items.ForEach(y=>
+				     {
+				         WriteLine(string.Format("                /// <summary>{0}</summary> ",y.Description));
+     			     	 WriteLine(string.Format(@"                public const string {0} = ""{0}"";",y.Name.Replace(".","")));
+				     }); 
+				     WriteLine(@"            }");
+				}
+			});
+#>
+		}
+	}
+}
+#endregion
+
+#region Register <#= module#>Module
+namespace <#=ns #>
+{
+    using Komon.Framework;
+	using System;
+    using System.Collections.Generic;
+	using Komon.Contract.Resource;
+    using Komon.Contract;
+
+    [KomonExport(typeof(IRegisterModule))]
+    internal class Register<#= module#>Module : IRegisterModule
+    {
+        public string Name { get { return <#= module#>Module.Name; } }
+        public IEnumerable<ActionDefinition> Actions
+        {
+            get
+            {
+                return new List<ActionDefinition>
+                {
+<#+		
+					actions.ForEach(x=> 
+					{
+						WriteLine(string.Format(@"                    new ActionDefinition {{ModuleName = Name,Name =  {0}Module.Actions.{1}, DisplayName =""{4}"", Description = ""{2}"", IsAvailableToUsers = {3} }},",module,x.Name,x.Description,x.IsAvailableToUsers,x.DisplayName));
+					});
+#>
+                };
+			}
+		}
+		public IEnumerable<LanguageTag> Languages
+        {
+            get
+            {
+                return new List<LanguageTag>
+                {
+<#+		
+					languageTags.ForEach(x=> 
+					{
+						WriteLine(string.Format(@"                    new LanguageTag {{ ModuleName = Name, Name={0}Module.LanguageTags.{1}, DefaultValue = ""{2}"",  Description = ""{3}"", IsEditable = {4} }},",module,x.Name,x.DefaultValue,x.Description,x.IsEditable));
+					});
+#>
+                };
+            }
+        }
+		public IEnumerable<ParameterDefinition> Parameters
+        {
+            get
+            {
+                return new List<ParameterDefinition>
+                {
+<#+		
+					parameters.ForEach(x=> 
+					{
+						WriteLine(string.Format(@"                    new ParameterDefinition {{ ModuleName = Name, Name={0}Module.Parameters.{1}, TypeName = KomonModule.Categories.ParameterTypes.{2}, DefaultValue = @""{3}"", Description = ""{4}"", IsEditable = {5} }},",module,x.Name,x.TypeName.Replace(".",""),x.DefaultValue,x.Description,x.IsEditable));
+					});
+#>
+                };
+            }
+        }
+		public IEnumerable<TrendGroupDefinition> Trends
+        {
+            get
+            {
+                return new List<TrendGroupDefinition>
+                {
+<#+		
+					trends.ForEach(x=> 
+					{
+						WriteLine(string.Format(@"                    new TrendGroupDefinition {{ ModuleName = Name, Name = {0}Module.Trends.{1}, ActionName = {0}Module.Actions.{2}, AggregateType = KomonModule.Categories.TrendAggregateTypes.{3}, ValueType = KomonModule.Categories.TrendValueTypes.{4}, IsAutoGeneratingSeries = {5}, IsActive = {6} , AccuracyType = KomonModule.Categories.AccuracyTypes.{7}, Description = ""{8}"" }},",module,x.Name,x.ActionName,x.AggregateType,x.ValueType.Replace(".",""), x.IsAutoGeneratingSeries, x.IsActive, x.AccuracyType, x.Description));
+					});
+#>
+                };
+            }
+        }
+		public IEnumerable<MapDefinition> Maps
+        {
+            get
+            {
+                return new List<MapDefinition>
+                {
+<#+		
+					maps.ForEach(x=> 
+					{
+						WriteLine(string.Format(@"                    new MapDefinition {{ ModuleName = Name, Name = {0}Module.Maps.{1}, FromType = KomonModule.Categories.MappingTypes.{2}, ToType = KomonModule.Categories.MappingTypes.{3}, Description = ""{4}""}},",module,x.Name,x.FromType.Replace(".",""),x.ToType.Replace(".",""), x.Description));
+					});
+#>
+                };
+            }
+        }
+		public IEnumerable<CategoryGroupDefinition> Categories
+        {
+            get
+            {
+                return new List<CategoryGroupDefinition>
+                {
+<#+		
+					categories.ForEach(x=> 
+					{
+						WriteLine(string.Format(@"                    new CategoryGroupDefinition {{ ModuleName = Name, Name = {0}Module.Categories.{1}, DisplayName = ""{2}"", Description = ""{3}"", Items = new List<CategoryDefinition>",module,x.Name,x.DisplayName, x.Description));
+						WriteLine(@"                    {");
+						x.Items.ForEach(y=> WriteLine(string.Format(@"                        new CategoryDefinition {{ Name = {0}Module.Categories.{1}s.{2}, DisplayName = ""{3}"", Description = ""{4}"" }},",module,x.Name,y.Name.Replace(".",""),y.DisplayName, y.Description)));
+						WriteLine(@"                    }},");
+					});
+#>
+				};
+			}
+		}
+		public IEnumerable<WorkflowDefinition> Workflows
+        {
+            get
+            {
+                return new List<WorkflowDefinition>
+                {
+<#+		
+					workflows.ForEach(x=> 
+					{
+						WriteLine(string.Format(@"                    new WorkflowDefinition {{ ModuleName = Name, Name = {0}Module.Workflows.{1}, ActionName = {0}Module.Actions.{2}, DisplayName = ""{3}"", Description = ""{4}"", IsDaily = {5}, RestartExecution = {6}, StartTime = TimeSpan.FromMilliseconds({7}), Interval = TimeSpan.FromMilliseconds({8}), Steps = new List<WorkflowStepDefinition>",module,x.Name,x.ActionName,x.DisplayName, x.Description,x.IsDaily,x.RestartExecution,x.StartTime,x.Interval));
+						WriteLine(@"                    {");
+						x.Items.ForEach(y=> WriteLine(string.Format(@"                        new WorkflowStepDefinition {{ Name = {0}Module.Workflows.{1}Steps.{2}, DisplayName = ""{3}"", Description = ""{4}"", Index = {5} }},",module,x.Name,y.Name.Replace(".",""),y.DisplayName, y.Description,y.Index)));
+						WriteLine(@"                    }},");
+					});
+#>
+				};
+			}
+		}
+
+	}
+}
+#endregion
+	
+#region Language <#= module#>
+namespace <#=ns #>
+{
+	using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Text;
+    using Komon.Contract.Model;
+    using System.Threading.Tasks;
+	using Komon.Contract.Resource;
+    using Komon.Contract;
+
+    /// <summary>
+    /// Translated Language tags for the <#= module#> module 
+    /// </summary>
+    public partial class <#= module#>Language : KomonLanguageBase
+    {
+        /// <summary>
+        /// Create an instance of <#= module#>Language
+        /// </summary>
+        /// <param name="model">An instance of a domain model</param>
+        public <#= module#>Language(DomainModelBase model) : base(model) { }
+<#+		
+		languageTags.ForEach(x=> 
+		{
+			WriteLine(string.Format(@"		/// <summary>{0}</summary>", x.Description));
+			WriteLine(string.Format(@"        public Task<string> {0} {{ get {{ return GetText({1}Module.Name,{1}Module.LanguageTags.{0}); }} }}",x.Name,module));
+		});
+#>
+    }
+}
+
+#endregion			
+
+#region Categories <#= module#>
+namespace <#=ns #>
+{
+	using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Text;
+    using Komon.Contract.Model;
+    using System.Threading.Tasks;
+	using Komon.Contract.Resource;
+    using Komon.Contract;
+
+    /// <summary>
+    /// Categories for the <#= module#> module 
+    /// </summary>
+    public partial class <#= module#>Categories : KomonCategoriesBase
+    {
+        /// <summary>
+        /// Create an instance of <#= module#>Categories
+        /// </summary>
+        /// <param name="model">An instance of a domain model</param>
+        public <#= module#>Categories(DomainModelBase model) : base(model) 
+		{ 
+		    notifyTasks = new <#= module#>CategoryNotifyTasks(model);
+		}
+		private <#= module#>CategoryNotifyTasks notifyTasks;
+		/// <summary></summary>
+		public <#= module#>CategoryNotifyTasks NotifyTasks { get{return notifyTasks;} }
+
+<#+		
+		categories.ForEach(x=> 
+		{
+			WriteLine(string.Format(@"		/// <summary>{0}</summary>", x.Description));
+			WriteLine(string.Format(@"        public Task<KomonCategoryGroup> {0} {{ get {{ return GetGroup({1}Module.Name,{1}Module.Categories.{0}); }} }}",x.Name,module));
+		});
+		#>
+        /// <summary></summary>
+		public class <#= module#>CategoryNotifyTasks : KomonCategoriesBase
+		{
+		    /// <summary></summary>
+		    public <#= module#>CategoryNotifyTasks(DomainModelBase model) : base(model) { }
+<#+		
+		categories.ForEach(x=> 
+		{
+			WriteLine(string.Format(@"		      /// <summary>{0}</summary>", x.Description));
+			WriteLine(string.Format(@"            public NotifyTask<KomonCategoryGroup> {0} {{ get {{ return new NotifyTask<KomonCategoryGroup>(GetGroup({1}Module.Name,{1}Module.Categories.{0})); }} }}",x.Name,module));
+		});
+#>
+    }
+}
+}
+#endregion
+
+#region Mappings <#= module#>
+namespace <#=ns #>
+{
+	using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Text;
+    using Komon.Contract.Model;
+    using System.Threading.Tasks;
+	using Komon.Contract.Resource;
+    using Komon.Contract;
+
+    /// <summary>
+    /// Mappings for the <#= module#> module 
+    /// </summary>
+    public partial class <#= module#>Mapping : KomonMappingBase
+    {
+        /// <summary>
+        /// Create an instance of <#= module#>Mapping
+        /// </summary>
+        /// <param name="model">An instance of a domain model</param>
+        public <#= module#>Mapping(DomainModelBase model) : base(model) { }
+<#+		
+		maps.ForEach(x=> 
+		{
+			WriteLine(string.Format(@"		/// <summary>{0}</summary>", x.Description));
+			WriteLine(string.Format(@"        public Task<KomonMap> {0} {{ get {{ return GetMapping({1}Module.Name, {1}Module.Maps.{0}); }} }}",x.Name,module));
+		});
+#>
+    }
+}
+#endregion	
+
+#region Parameters <#= module#>
+namespace <#=ns #>
+{
+	using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Text;
+    using Komon.Contract.Model;
+    using System.Threading.Tasks;
+	using Komon.Contract.Resource;
+    using Komon.Contract;
+
+    /// <summary>
+    /// Parameters for the <#= module#> module 
+    /// </summary>
+    public partial class <#= module#>Parameters : KomonParametersBase
+    {
+        /// <summary>
+        /// Create an instance of <#= module#>Parameters
+        /// </summary>
+        /// <param name="model">An instance of a domain model</param>
+        public <#= module#>Parameters(DomainModelBase model) : base(model) { }
+<#+		
+		parameters.ForEach(x=> 
+		{
+			WriteLine(string.Format(@"		/// <summary>{0}</summary>", x.Description));
+			WriteLine(string.Format(@"        public Task<{2}> {0} {{ get {{ return GetValue<{2}>({1}Module.Name, {1}Module.Parameters.{0}); }} }}",x.Name,module,x.TypeName));
+			if(x.GenerateSet)
+			{
+			    WriteLine(string.Format(@"		/// <summary>{0}</summary>", x.Description));
+				if("System.DateTime" == x.TypeName)
+				{
+				    WriteLine(string.Format(@"        public async Task Set{1}({2} time){{ await SetValue(""{0}.{1}"",time.Ticks.ToString()); }}",module,x.Name,x.TypeName));
+				}
+				else
+				{
+				    WriteLine(string.Format(@"        public async Task Set{1}({2} val){{ await SetValue(""{0}.{1}"",val.ToString()); }}",module,x.Name,x.TypeName));
+				}
+			}
+		});
+#>
+    }
+}
+#endregion				
+<#+
+}
+#>

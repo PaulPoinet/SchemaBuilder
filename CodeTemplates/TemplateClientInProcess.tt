@@ -1,0 +1,161 @@
+<#@ assembly name="System.Xml" #>
+<#@ assembly name="System.Core.dll" #>
+<#@ assembly name="$(SolutionDir)CodeTemplates\Komon\Komon.TextTemplates.dll" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ import namespace="System.Xml.Serialization" #>
+<#@ import namespace="System.Diagnostics" #>
+<#@ import namespace="System.ComponentModel" #>
+<#@ import namespace="System.IO" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System.CodeDom.Compiler" #>
+<#@ import namespace="System.Linq" #><#+
+
+
+public void PrintDbSync(string serviceInterface, string fileName, string nameSpace,string implementation)
+{
+var clientName = serviceInterface.TrimStart('I') + "InProcess";
+
+var interfacet = Komon.TextTemplates.GetInterfaces(fileName).Where(x=>x.Name == serviceInterface).Single();
+
+var met = (from m in interfacet.Methods
+                         select new
+                         {
+                             Name = m.Name.Replace("Komon.Komon.","Komon."),
+                             Return = m.Return.Replace("Komon.Komon.","Komon."),
+							 Params = string.Join(",",m.Parameters.Select(x=>string.Format("{0} {1}",x.Type,x.Name))).Replace("Komon.Komon.","Komon."),
+                             ParamNames = string.Join(",", m.Parameters.Select(x => string.Format("{0}",x.Name))).Replace("Komon.Komon.","Komon."),
+                             ParamTypes = string.Join(",", m.Parameters.Select(x => string.Format("{0}", x.Type))).Replace("Komon.Komon.","Komon."),
+                         }
+                         ).ToList();
+#>
+#region <#= clientName #> InProcess Service
+namespace <#= nameSpace #>
+{
+	using System;
+	using Komon.Logic;
+	using Komon.Contract.Client;
+    using Komon.Framework;
+    using Komon.Contract.Service;
+	using Komon.Contract;
+	using System.Threading.Tasks;
+    using System.Collections.Generic;
+
+    [KomonExport(typeof(IRegisterService<IKomonService>))]
+    internal class Register<#= clientName #> : IRegisterService<<#= serviceInterface #>>
+    {
+        
+        public string GetEndPointName(KomonSystem system) { return ""; }
+        public <#= serviceInterface #> Create(ClientContext context) { return new <#= clientName #>(context); }
+        public ClientType Type { get { return ClientType.InProcess; }}
+    }
+
+	internal class <#= clientName #> : KomonInProcessClientBase<<#= serviceInterface #>>, <#= serviceInterface #> 
+	{
+		public <#= clientName #>(ClientContext context) : base(context){}
+		public override <#= serviceInterface #>  CreateInstance()
+		{
+			return new <#= implementation #> ();
+		}
+<#+
+	foreach(var m in met)
+	{
+#>
+		public async <#+ Write(m.Return=="void" ? "void" : m.Return);#>  <#+ Write(m.Name); #>(<#+ Write(m.Params); #>)
+        {
+			<#+ if(m.Return != "void" && m.Return != "Task") Write("return await"); #>  await base.CallFacade(t => t.<#+ Write(m.Name); #>(<#+ Write(m.ParamNames); #>),"<#= serviceInterface#>","<#= m.Name #>");
+		}
+<#+
+
+	}
+#>
+	}
+}
+#endregion <#= clientName #> InProcess Service
+<#+
+}
+
+public void PrintDbAsync(string serviceInterface, string fileName, string nameSpace,string implementation)
+{
+var clientName = serviceInterface.TrimStart('I').Replace("Service","Client") + "InProcess";
+var clientInterface = serviceInterface.Replace("Service","Client");
+
+var interfacet = Komon.TextTemplates.GetInterfaces(fileName).Where(x=>x.Name == serviceInterface).Single();
+
+var met = (from m in interfacet.Methods
+                         select new
+                         {
+                             Name = m.Name.Replace("Komon.Komon.","Komon."),
+                             Return = m.Return.Replace("Komon.Komon.","Komon."),
+							 IsTask = m.Return.StartsWith("Task") ,
+                             Params = string.Join(",",m.Parameters.Select(x=>string.Format("{0} {1}",x.Type,x.Name))).Replace("Komon.Komon.","Komon."),
+                             ParamNames = string.Join(",", m.Parameters.Select(x => string.Format("{0}",x.Name))).Replace("Komon.Komon.","Komon."),
+                             ParamTypes = string.Join(",", m.Parameters.Select(x => string.Format("{0}", x.Type))).Replace("Komon.Komon.","Komon."),
+                         }
+                         ).ToList();
+#>
+#region <#= clientName #> InProcess Client
+namespace <#= nameSpace #>
+{
+	using System;
+	using Komon.Logic;
+	using Komon.Contract.Client;
+    using Komon.Framework;
+    using Komon.Contract.Service;
+	using System.Threading.Tasks;
+	using Komon.Contract;
+	using System.Threading;
+    using System.Collections.Generic;
+
+    [KomonExport(typeof(IRegisterService<IKomonService>))]
+    internal class Register<#= clientName #> : IRegisterService<<#= clientInterface #>>
+    {
+        
+        public string GetEndPointName(KomonSystem system) { return ""; }
+        public <#= clientInterface #> Create(ClientContext context) { return new <#= clientName #>(context); }
+        public ClientType Type { get { return ClientType.InProcess; }}
+    }
+
+	internal class <#= clientName #> : KomonInProcessClientBase<<#= serviceInterface #>>, <#= clientInterface #>
+	{
+		public <#= clientName #>(ClientContext context) : base(context){}
+		public override <#= serviceInterface #>  CreateInstance()
+		{
+			return new <#= implementation #> ();
+		}
+<#+
+	foreach(var m in met)
+	{
+#>
+			<#+ if(m.IsTask)
+			{
+			#> 
+        public async <#+ Write(m.Return);#>  <#+ Write(m.Name); #>(<#+ Write(m.Params); if(m.Params.Count() > 0) Write(","); #> CancellationToken token = default(CancellationToken))
+        {
+			<#+ Write(m.Return == "Task" ? "" : "return"); #> await await base.CallFacade(t =>  t.<#+ Write(m.Name); #>(<#+ Write(m.ParamNames); #>),"<#= serviceInterface#>","<#= m.Name #>",token).ConfigureAwait(false);
+			<#+
+			}
+			else
+			{
+			#> 
+		public async Task<#+ Write(m.Return == "void" ? "" : "<" + m.Return + ">");#>  <#+ Write(m.Name); #>(<#+ Write(m.Params); #>)
+		{
+			<#+ Write(m.Return == "void" ? "" : "return");#> await await base.CallFacade(t => Task.Factory.StartNew(() => t.<#+ Write(m.Name); #>(<#+ Write(m.ParamNames); #>)),"<#= serviceInterface#>","<#= m.Name #>");
+			<#+
+			}
+			#> 
+		} 
+
+<#+
+
+	}
+#>
+	}
+}
+#endregion <#= clientName #> InProcess Client
+<#+
+}
+
+
+
+
+#>

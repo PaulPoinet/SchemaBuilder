@@ -11,15 +11,38 @@ using Newtonsoft.Json;
 
 namespace SchemaBuilder
 {
+
+
+
     public class Interop
     {
 
         private static ChromiumWebBrowser Browser { get; set; }
 
+        public SchemaBuilderDisplay myDisplay { get; set; }
+        public bool? myDisplayBool = null;
+        public SchemaBuilderDisplayOnHover myDisplayOnHover { get; set; }
+        public bool? myDisplayBoolOnHover = null;
+        public SchemaBuilderDisplayGraphOnHover myDisplayGraphOnHover { get; set; }
+        public bool? myDisplayGraphBoolOnHover = null;
+        public List<Guid> allGuids { get; set; }
+        public List<Rhino.Geometry.Point3d> originalCentroids = new List<Rhino.Geometry.Point3d>();
+        public Rhino.Geometry.Point3d explosionCenter { get; set; }
+
+        private RhinoEventListeners myListeners { get; set; }
+
+        public SchemaBuilderDisplayEdges myDisplayEdges { get; set; }
+        public bool? myDisplayEdgesBool = null;
+
+        //public Rhino.Geometry.BoundingBox myGlobalBbox { get; set; }
+
         public Interop(ChromiumWebBrowser browser)
         {
             Browser = browser;
-
+            RhinoEventListeners.Browser = browser;
+            myListeners = new RhinoEventListeners();
+            myListeners.Enable(true);
+            myListeners.SetInteropInstance(this);
         }
 
         public void ShowDev()
@@ -27,21 +50,128 @@ namespace SchemaBuilder
             Browser.ShowDevTools();
         }
 
-        public string myGlobalGUID = null;
 
-        public Rhino.Geometry.BoundingBox ShowObject(string myGUID)
+        public void ShowHoveredGraph(string myGUIDstring, string myDirectedPath)
         {
-            //RhinoApp.WriteLine(myGUID);
-            Guid myGuid = new Guid(myGUID);
-            RhinoObject foundObject =  Rhino.RhinoDoc.ActiveDoc.Objects.Find(myGuid);
-            Rhino.Geometry.BoundingBox bbox = foundObject.Geometry.GetBoundingBox(true);
-            myGlobalGUID = myGUID;
-            return bbox;
+            myDisplayGraphBoolOnHover = true;
+            List<List<Guid>> myDirectedGUIDs = JsonConvert.DeserializeObject<List<List<Guid>>>(myDirectedPath);
+
+            myDisplayGraphOnHover = new SchemaBuilderDisplayGraphOnHover();
+            myDisplayGraphOnHover.Edges = myDirectedGUIDs;
+            Guid myGuid = new Guid(myGUIDstring);
+            myDisplayGraphOnHover.Id = myGuid;
+            myDisplayGraphOnHover.Enabled = true;
+            RhinoDoc.ActiveDoc.Views.Redraw();
         }
-        
 
+        public void HideHoveredGraph()
+        {
+            if (myDisplayGraphBoolOnHover == null)
+            {
+            }
+            else
+            {
+                myDisplayGraphOnHover.Enabled = false;
+                Rhino.RhinoDoc.ActiveDoc.Views.Redraw();
+            }
+        }
 
+        public void ShowObjects(string myGUIDs)
+        {
+            myDisplayBool = true;
+            myDisplay = new SchemaBuilderDisplay();
+            
+            List<Guid> myListGUIDs = JsonConvert.DeserializeObject<List<Guid>>(myGUIDs);
+            allGuids = myListGUIDs;
 
+            //RhinoApp.WriteLine(myListGUIDs[0].ToString());
+            myDisplay.Ids = myListGUIDs;
+            myDisplay.Enabled = true;
+            Rhino.RhinoDoc.ActiveDoc.Views.Redraw();
+        }
+
+        public void SpreadObjects(double step, Boolean refresh)
+        {
+            if (myDisplayBool == null)
+            {
+            }
+            else
+            {
+                Rhino.Geometry.BoundingBox myGlobalBbox = new Rhino.Geometry.BoundingBox();
+                myGlobalBbox = Rhino.Geometry.BoundingBox.Empty;
+                List<Rhino.Geometry.Point3d> myCentroids = new List<Rhino.Geometry.Point3d>();
+                //myCentroids.Clear();
+                //Rhino.Geometry.Point3d explosionCenter;
+
+                // First iteration: find initial object and initial bounding box center
+                if (originalCentroids.Count == 0 || refresh == true)
+                {
+                    myCentroids.Clear();
+                    foreach (Guid guid in allGuids)
+                    {
+                        //Rhino.RhinoDoc.ActiveDoc.Views.Redraw();
+                        RhinoObject foundObject = Rhino.RhinoDoc.ActiveDoc.Objects.Find(guid);
+                        Rhino.Geometry.BoundingBox foundBbox = foundObject.Geometry.GetBoundingBox(true);
+                        myGlobalBbox.Union(foundBbox);
+                        myCentroids.Add(foundBbox.Center);
+
+                        //explosionCenter.
+                        explosionCenter = myGlobalBbox.Center;
+                    }
+                    originalCentroids = myCentroids;
+                }
+                else
+                {
+                    for (int i = 0; i < allGuids.Count; i++)
+                    {
+                        RhinoObject foundObject = Rhino.RhinoDoc.ActiveDoc.Objects.Find(allGuids[i]);
+                        Rhino.Geometry.Vector3d trans = explosionCenter - originalCentroids[i];
+                        
+                        // Brings back to original position.
+                        Rhino.Geometry.Vector3d backTrans = originalCentroids[i] - foundObject.Geometry.GetBoundingBox(true).Center;
+                        trans.Unitize();
+                        Rhino.RhinoDoc.ActiveDoc.Objects.Transform(foundObject, Rhino.Geometry.Transform.Translation(backTrans-Rhino.Geometry.Vector3d.Multiply(step, trans)), true);
+                        Rhino.RhinoDoc.ActiveDoc.Views.Redraw();
+                    }
+                }
+            }
+        }
+
+        public void HideObjects()
+        {
+            if (myDisplayBool == null)
+            {
+            }
+            else
+            {
+                myDisplay.Enabled = false;
+                Rhino.RhinoDoc.ActiveDoc.Views.Redraw();
+            }
+        }
+
+        public void ShowEdges(string myEdges)
+        {
+            myDisplayEdgesBool = true;
+            myDisplayEdges = new SchemaBuilderDisplayEdges();
+            List<List<Guid>> tupGUIDs = JsonConvert.DeserializeObject<List<List<Guid>>>(myEdges);
+
+            //RhinoApp.WriteLine(myListGUIDs[0].ToString());
+            myDisplayEdges.Edges = tupGUIDs;
+            myDisplayEdges.Enabled = true;
+            Rhino.RhinoDoc.ActiveDoc.Views.Redraw();
+        }
+
+        public void HideEdges()
+        {
+            if (myDisplayEdgesBool == null)
+            {
+            }
+            else
+            {
+                myDisplayEdges.Enabled = false;
+                Rhino.RhinoDoc.ActiveDoc.Views.Redraw();
+            }
+        }
 
         public void OnClickProperties()
         {
@@ -141,17 +271,10 @@ namespace SchemaBuilder
 
     }
 
-    public class MyConduit : Rhino.Display.DisplayConduit
+    public static class MyGlobals
     {
-        protected override void CalculateBoundingBox(Rhino.Display.CalculateBoundingBoxEventArgs e)
-        {
-            base.CalculateBoundingBox(e);
-            //e.IncludeBoundingBox(new Rhino.Geometry.Point3d(0, 0, 0));
-        }
-        protected override void PreDrawObjects(Rhino.Display.DrawEventArgs e)
-        {
-            base.PreDrawObjects(e);
-            e.Display.DrawBoxCorners(Interop.ShowObject(Interop.myGlobalGUID), System.Drawing.Color.AliceBlue, 3);
-        }
+        public static string myGlobalGUID { get; set; }
     }
+
+
 }
