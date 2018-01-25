@@ -37,6 +37,7 @@ namespace SchemaBuilder
         {
             var panel_type = typeof(SchemaBuilderPanelControl);
             Rhino.UI.Panels.RegisterPanel(this, panel_type, "SchemaBuilder", SchemaBuilder.Properties.Resources.SchemaBuilder);
+            InitializeCef();
             return Rhino.PlugIns.LoadReturnCode.Success;
         }
 
