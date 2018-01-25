@@ -168,9 +168,10 @@ namespace SchemaBuilder
             IsEnabled = enable;
         }
 
-        private void DImitrieIdleEvent(object sender, EventArgs e)
+
+        void RefreshSelected()
         {
-            Debug.WriteLine("dimitrie");
+            RhinoDoc.SelectObjects += OnSelectObjects;
         }
 
         private void RhinoApp_KeyboardEvent1(int key)
@@ -463,6 +464,7 @@ namespace SchemaBuilder
                 Rhino.RhinoDoc.ActiveDoc.Views.Redraw();
             }
             List<Rhino.DocObjects.RhinoObject> mySelectedObjects = Rhino.RhinoDoc.ActiveDoc.Objects.GetSelectedObjects(true, true).ToList();
+            mySelectedObjects.Reverse(); // orders selection from older to younger
             RhinoApp.WriteLine(mySelectedObjects.Count.ToString());
 
             List<Guid> selIds = new List<Guid>();
@@ -504,8 +506,10 @@ namespace SchemaBuilder
         /// </summary>
         public void OnDeselectObjects(object sender, Rhino.DocObjects.RhinoObjectSelectionEventArgs e)
         {
+            
             DebugWriteMethod();
             RhinoApp.WriteLine("Deselected");
+            //RhinoDoc.SelectObjects += OnSelectObjects;
             if (displayObjInTheTree_bool == null)
             {
             }
@@ -513,6 +517,37 @@ namespace SchemaBuilder
             {
                 displayObjInTheTree.Enabled = false;
                 Rhino.RhinoDoc.ActiveDoc.Views.Redraw();
+            }
+            List<Rhino.DocObjects.RhinoObject> mySelectedObjects = Rhino.RhinoDoc.ActiveDoc.Objects.GetSelectedObjects(true, true).ToList();
+            mySelectedObjects.Reverse(); // orders selection from older to younger
+            RhinoApp.WriteLine(mySelectedObjects.Count.ToString());
+
+            List<Guid> selIds = new List<Guid>();
+            foreach (Rhino.DocObjects.RhinoObject obj in mySelectedObjects)
+            {
+                if (myInterop.allGuids != null)
+                {
+                    if (myInterop.allGuids.Exists(x => x == obj.Id))
+                    {
+                        RhinoApp.WriteLine("It's in the tree.");
+                        selIds.Add(obj.Id);
+                    }
+                    else
+                        RhinoApp.WriteLine("It's NOT in the tree.");
+                }
+                else
+                    RhinoApp.WriteLine("NOTHING is in the tree.");
+            }
+
+            if (selIds.Count > 0)
+            {
+                displayObjInTheTree_bool = true;
+                displayObjInTheTree = new ObjectsInTheTree();
+                displayObjInTheTree.Ids = selIds;
+                displayObjInTheTree.Enabled = true;
+                Rhino.RhinoDoc.ActiveDoc.Views.Redraw();
+                var script = string.Format("window.bus.$emit('{0}', '{1}')", "my-selected-ids", JsonConvert.SerializeObject(selIds));
+                Browser.GetMainFrame().EvaluateScriptAsync(script);
             }
         }
 
@@ -530,6 +565,8 @@ namespace SchemaBuilder
             {
                 displayObjInTheTree.Enabled = false;
                 Rhino.RhinoDoc.ActiveDoc.Views.Redraw();
+                var script = string.Format("window.bus.$emit('{0}', '{1}')", "deselection-all", "false");
+                Browser.GetMainFrame().EvaluateScriptAsync(script);
             }
         }
 

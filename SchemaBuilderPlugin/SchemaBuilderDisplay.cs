@@ -7,9 +7,11 @@ using Rhino.Display;
 
 namespace SchemaBuilder
 {
+    
     public class SchemaBuilderDisplay : Rhino.Display.DisplayConduit
     {
         public List<Guid> Ids = new List<Guid>();
+        
 
         protected override void CalculateBoundingBox(Rhino.Display.CalculateBoundingBoxEventArgs e)
         {
@@ -19,12 +21,47 @@ namespace SchemaBuilder
         protected override void PreDrawObjects(Rhino.Display.DrawEventArgs e)
         {
             base.PreDrawObjects(e);
+
+
+
+
             for (int i = 0; i < Ids.Count; i++) {
                 RhinoObject foundObject = Rhino.RhinoDoc.ActiveDoc.Objects.Find(Ids[i]);
                 Rhino.Geometry.BoundingBox bbox = foundObject.Geometry.GetBoundingBox(true);
-                e.Display.DrawBoxCorners(bbox, System.Drawing.Color.DarkGray, 3, 4);
+                //e.Display.DrawBoxCorners(bbox, System.Drawing.Color.DarkGray, 3, 4);
                 //e.Display.DrawDot(bbox.Center, Ids[i].ToString());
+
+                Rhino.Display.RhinoView myViewport = Rhino.RhinoDoc.ActiveDoc.Views.ActiveView;
+                Rhino.Display.RhinoViewport viewport = myViewport.ActiveViewport;
+                Rhino.Geometry.Plane myFrustumPlane = new Rhino.Geometry.Plane();
+                viewport.GetFrustumFarPlane(out myFrustumPlane);
+                myFrustumPlane.Origin = bbox.Center;
+                Rhino.Geometry.Circle myFrustumCircle = new Rhino.Geometry.Circle();
+                myFrustumCircle.Plane = myFrustumPlane;
+                myFrustumCircle.Radius = bbox.Diagonal.Length / 2;
+                
+
+                Rhino.Geometry.NurbsCurve myFrustumCrv = myFrustumCircle.ToNurbsCurve();
+                
+                
+                double[] tlist = myFrustumCrv.DivideByLength(2, true);
+                if (tlist.Length % 2 == 0)
+                {
+                    tlist = myFrustumCrv.DivideByCount(tlist.Length, true);
+                }
+                else
+                {
+                    tlist = myFrustumCrv.DivideByCount(tlist.Length+1, true);
+                }
+                Rhino.Geometry.Curve[] crvsToRender = myFrustumCrv.Split(tlist);
+                //e.Display.DrawDot(bbox.GetCorners()[4], i.ToString(), System.Drawing.Color.Red, System.Drawing.Color.White);
+                for (int j = 0; j < crvsToRender.Length; j++)
+                {
+                    if (j % 2 == 0)
+                        e.Display.DrawCurve(crvsToRender[j], System.Drawing.Color.Red, 3);
+                }
             }
+
             Rhino.RhinoDoc.ActiveDoc.Views.Redraw();
 
         }
@@ -197,23 +234,36 @@ namespace SchemaBuilder
     public class ObjectsInTheTree : Rhino.Display.DisplayConduit
     {
         public List<Guid> Ids = new List<Guid>();
+        public List<Rhino.Geometry.Curve> FrustumCurves { get; set; }
 
         protected override void CalculateBoundingBox(Rhino.Display.CalculateBoundingBoxEventArgs e)
         {
             base.CalculateBoundingBox(e);
             //e.IncludeBoundingBox(new Rhino.Geometry.Point3d(0, 0, 0));
         }
-        protected override void DrawForeground(Rhino.Display.DrawEventArgs e)
+        protected override void DrawOverlay(Rhino.Display.DrawEventArgs e)
         {
-            base.PreDrawObjects(e);
+            base.DrawOverlay(e);
+            Rhino.Display.RhinoView myViewport = Rhino.RhinoDoc.ActiveDoc.Views.ActiveView;
+            Rhino.Display.RhinoViewport viewport = myViewport.ActiveViewport;
             for (int i = 0; i < Ids.Count; i++)
             {
                 RhinoObject foundObject = Rhino.RhinoDoc.ActiveDoc.Objects.Find(Ids[i]);
                 Rhino.Geometry.BoundingBox bbox = foundObject.Geometry.GetBoundingBox(true);
-                //e.Display.DrawBoxCorners(bbox, System.Drawing.Color.DarkGray, 3, 4);
-                e.Display.DrawDot(bbox.Center, i.ToString(), System.Drawing.Color.Red, System.Drawing.Color.White);
-                //e.Display.DrawDot()
-                //e.Display.DrawDot()
+                Rhino.Geometry.Plane myFrustumPlane = new Rhino.Geometry.Plane();
+                viewport.GetFrustumFarPlane(out myFrustumPlane);
+                myFrustumPlane.Origin = bbox.Center;
+                Rhino.Geometry.Circle myFrustumCircle = new Rhino.Geometry.Circle();
+                myFrustumCircle.Plane = myFrustumPlane;
+                myFrustumCircle.Radius = bbox.Diagonal.Length / 2;
+                Rhino.Geometry.Curve myFrustumCurve = myFrustumCircle.ToNurbsCurve();
+
+                myFrustumCurve.Domain = new Rhino.Geometry.Interval(0.0,1.0);
+
+
+
+                e.Display.DrawDot(myFrustumCurve.PointAtNormalizedLength(0.4), i.ToString(), System.Drawing.Color.Red, System.Drawing.Color.White);
+
             }
             Rhino.RhinoDoc.ActiveDoc.Views.Redraw();
 

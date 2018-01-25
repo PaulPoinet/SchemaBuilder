@@ -15,12 +15,34 @@
       <label v-if="editValue==false && !isFolder && lock" class="lockColor" v-bind:title="messageCantEdit"> {{objectValue}} </label>
       <span v-if="isFolder && model.children.length > 0" v-show="!open" class="redFont">{...+{{model.children.length}}}</span>
       <span>&nbsp;</span>
-
+      <span v-if="isFolder && model.children[0].Key == 'Id' && this.showObjectsInTree==true && contains(selectedIds, model.children[0].Value)[0]==true">
+      <v-icon class="makeSmall" small icon color="yellow">fa-cube</v-icon>
+      <v-avatar class="red" size="18px" >
+        <span class="whiteFont">{{contains(selectedIds, model.children[0].Value)[1]}}</span>
+      </v-avatar>
+      </span>
+      <span v-if="isFolder && model.children[0].Key == 'Id' && contains(selectedIds, model.children[0].Value)[0]!=true || this.showObjectsInTree==false && isFolder && model.children[0].Key == 'Id'">
+      <v-icon class="makeSmall" small icon color="grey">fa-cube</v-icon>
+      <v-avatar class="black" size="18px" >
+        <!--<span class="whiteFont">{{contains(objectIds, model.children[0].Value)}}</span>-->
+      <span class="whiteFont">{{printstuff(model.children[0].Value)[1]}}</span>
+      </v-avatar>
+      </span>
       <v-tooltip right>
         <v-icon style="cursor: pointer;" @click="show" hover xs1 small flat color="grey lighten-2" class="makeSmall" slot="activator">more_vert</v-icon>
         <span>Options</span>
       </v-tooltip>
-      <v-icon hover xs1 small flat color="grey lighten-1" v-if="this.objectKey=='Id' && this.showObjectsInTree==true && contains(selectedIds, this.objectValue)==true" class="makeSmall">add_box</v-icon>
+      <!--<v-chip class="ma-0" small color="red" text-color="white" v-if="isFolder && model.children[0].Key == 'Id' && this.showObjectsInTree==true && contains(selectedIds, model.children[0].Value)[0]==true">
+        <v-icon class="makeSmall" small icon color="yellow">fa-cube</v-icon>
+        <v-avatar class="red" size="5px" >
+          <span class="whiteFont">{{contains(selectedIds, model.children[0].Value)[1]}}</span>
+        </v-avatar>
+        {{contains(selectedIds, model.children[0].Value)[1]}}
+      </v-chip>-->
+      <!--<v-badge color="red" v-if="this.objectKey=='Id' && this.showObjectsInTree==true && contains(selectedIds, this.objectValue)[0]==true">
+          <span slot="badge">{{contains(selectedIds, this.objectValue)[1]}}</span>
+          <v-icon class="makeSmall" small icon color="yellow">fa-cube</v-icon>
+        </v-badge>-->
       <v-menu transition="slide-x-transition" bottom right color="black" v-model="showMenu" absolute :position-x="x" :position-y="y">
         <v-list class="ma-0" dark dense>
           <v-list-tile>
@@ -66,7 +88,6 @@
         <item class="item" v-for="(model, index) in model.children" :model="model" :index='index' @mouseover="isItObject" @mouseleave="hideThisObject" @deleteMe='deleteKid'></item>
       </draggable>
       <div>
-
         <v-tooltip right>
           <v-icon style="cursor: pointer;" @click="showAddOptions" hover xs1 small flat color="grey lighten-1" class="makeSmall" slot="activator">add_to_photos</v-icon>
           <span>Add...</span>
@@ -137,10 +158,11 @@ export default {
       showTheObjects: true,
       showTheGraph: true,
       objectIds: [ ],
+      objectIdsGlobal: [ ],
       GlobalEdges: [ ],
-      GlobalSiblingEdges: [],
+      GlobalSiblingEdges: [ ],
       showObjectsInTree: false,
-      selectedIds: [],
+      selectedIds: [ ],
 
       //myRoot: null,
     }
@@ -193,13 +215,51 @@ export default {
         this.open = !this.open
       }
     },
-    contains(a, obj) {
-        for (var i = 0; i < a.length; i++) {
-            if (a[i] === obj) {
-                return true;
-            }
+    printstuff( obj ) {
+      if ( this.model.Value == "SchemaBuilder" ) {
+        this.objectIds = [ ]
+        this.collectGUIDs( this.model )
+
+        console.log( this.objectIds, 'from print' )
+      } else { console.log( "FAIL" ) }
+
+      //window.bus.$emit( 'show-me-wut-u-got' )
+      //this.$nextTick(console.log(this.objectIds, "whyEmptyyFFSssssssssssssssssss????"))
+      //window.bus.$on( 'objects-Ids', state => {
+      //  this.objectIdsGlobal = state
+      //  console.log(this.objectIdsGlobal, "WTFisg2oingon????")
+      //} )
+      
+      window.bus.$on( 'objects-Ids2', state => {
+        this.objectIdsGlobal = state
+        console.log( this.objectIdsGlobal, "WTFisgoingon????" )
+      } )
+      console.log( this.objectIdsGlobal, "bitch????" )
+
+      //console.log(this.objectIds, "WTFisgoingonFFFFFFFFFFFFFF????")
+      //console.log(this.objectIdsGlobal, "WTFisgoingon????")
+      for ( var i = 0; i < this.objectIdsGlobal.length; i++ ) {
+        if ( this.objectIdsGlobal[ i ] === obj ) {
+          return [ true, i ];
         }
-        return false;
+      }
+      return false;
+
+    },
+
+
+
+
+
+    contains( a, obj ) {
+      //console.log( this.objectIds )
+      //console.log( "myobjectidsFFSkdjnkdng" )
+      for ( var i = 0; i < a.length; i++ ) {
+        if ( a[ i ] === obj ) {
+          return [ true, i ];
+        }
+      }
+      return false;
     },
     unfoldAll( ) {
       if ( open ) {
@@ -270,10 +330,10 @@ export default {
       if ( this.showTheObjects ) {
         window.bus.$emit( 'show-me-wut-u-got' )
       }
-      if ( this.showTheGraph ){
+      if ( this.showTheGraph ) {
         window.bus.$emit( 'show-me-the-graph' )
       }
-      window.bus.$emit('refresh-objects', true)
+      window.bus.$emit( 'refresh-objects', true )
     },
 
 
@@ -282,8 +342,8 @@ export default {
       for ( var i = 0; i < myRoot.children.length; i++ ) {
         if ( myRoot.children[ i ].children && myRoot.children[ i ].children.length ) {
           if ( myRoot.children[ i ].children[ 0 ].Key == myValue ) {
-            console.log( myRoot.children[ 0 ].key )
-            console.log( myValue )
+            //console.log( myRoot.children[ 0 ].key )
+            //console.log( myValue )
           }
           this.findParentAndNeighbors( myRoot.children[ i ] )
         } else {}
@@ -303,7 +363,7 @@ export default {
             AllParentKidRels.push( myParentKidRel )
           }
         }
-        console.log( JSON.stringify( AllParentKidRels ) )
+        //console.log( JSON.stringify( AllParentKidRels ) )
         Interop.showHoveredGraph( this.model.children[ 0 ].Value, JSON.stringify( AllParentKidRels ) )
       }
     },
@@ -351,11 +411,11 @@ export default {
           this.collectTheEdges( myModel.children[ i ] )
         } else if ( myModel.Value == "myRhinoObject" ) {
 
-          var siblingEdges = []
+          var siblingEdges = [ ]
 
           for ( var i = 0; i < myModel.children.length; i++ ) {
             if ( myModel.children[ i ].Value == "myRhinoObject" ) {
-              siblingEdges.push(myModel.children[ i ].children[ 0 ].Value)
+              siblingEdges.push( myModel.children[ i ].children[ 0 ].Value )
               var myParentKidRel = [ ]
               myParentKidRel.push( myModel.children[ 0 ].Value )
               myParentKidRel.push( myModel.children[ i ].children[ 0 ].Value )
@@ -364,9 +424,9 @@ export default {
             }
           }
 
-          if (siblingEdges.length > 1){
-            this.GlobalSiblingEdges.push(siblingEdges)
-          }           
+          if ( siblingEdges.length > 1 ) {
+            this.GlobalSiblingEdges.push( siblingEdges )
+          }
         } else {}
       }
     },
@@ -377,26 +437,50 @@ export default {
       this.objectIds = [ ]
       this.collectGUIDs( this.model )
       //console.log( this.objectIds )
+      window.bus.$emit( 'objects-Ids', this.objectIds )
       Interop.showObjects( JSON.stringify( this.objectIds ) )
     },
 
-    showMeTheGraph(){
+    collectTheObjects( ) {
+      //console.log( this.objectIds )
+      if ( this.model.Value == "SchemaBuilder" ) {
+        this.objectIds = [ ]
+        this.collectGUIDs( this.model )
+        return this.objectIds
+      }
+
+      //console.log( this.objectIds )
+      //return this.objectIds;
+    },
+
+    showMeTheGraph( ) {
       Interop.hideEdges( ) // works that way...
       this.GlobalEdges = [ ]
       this.GlobalSiblingEdges = [ ]
       this.collectTheEdges( this.model )
-      console.log(this.GlobalEdges)
-      console.log(this.GlobalSiblingEdges)
-      Interop.showEdges(JSON.stringify(this.GlobalEdges))
+      console.log( this.GlobalEdges )
+      console.log( this.GlobalSiblingEdges )
+      Interop.showEdges( JSON.stringify( this.GlobalEdges ) )
     }
+
   },
 
   mounted( ) {
 
+    if ( this.model.Value == "SchemaBuilder" ) {
+      this.objectIds = [ ]
+      this.collectGUIDs( this.model )
+      console.log( this.objectIds, 'from updated  ' )
+      window.bus.$emit( 'objects-Ids2', this.objectIds )
+      console.log("FILSDEPUTE")
+    }
+
     window.bus.$on( 'show-me-wut-u-got', state => {
       if ( this.showTheObjects && this.model.Value == "SchemaBuilder" ) {
         this.$nextTick( this.showMeTheObjects( ) )
+
       }
+      //window.bus.$emit( 'objects-Ids', this.objectIds )
     } )
     window.bus.$on( 'show-me-the-graph', state => {
       if ( this.showTheGraph && this.model.Value == "SchemaBuilder" ) {
@@ -414,6 +498,7 @@ export default {
     } )
     window.bus.$on( 'add-properties', state => {
       this.myProperties = state
+      this.$nextTick( Interop.refreshSelected( ) )
     } )
     window.bus.$on( 'obj-name', state => {
       this.customName = state
@@ -421,34 +506,60 @@ export default {
     window.bus.$on( 'obj-Id', state => {
       this.myObjectId = state
     } )
+
     window.bus.$on( 'show-global-objects', state => {
-        this.showTheObjects = state
-        if ( state == true && this.model.Value == "SchemaBuilder" ) {
-          this.$nextTick( this.showMeTheObjects( ) )
-        } else if ( state == false ) {
-          Interop.hideObjects( )
-        }
-      })
+      this.showTheObjects = state
+      if ( state == true && this.model.Value == "SchemaBuilder" ) {
+        this.$nextTick( this.showMeTheObjects( ) )
+      } else if ( state == false ) {
+        Interop.hideObjects( )
+      }
+    } )
+
     window.bus.$on( 'show-rel', state => {
-        this.showTheGraph = state
-        if ( state == true && this.model.Value == "SchemaBuilder" ) {
-          this.$nextTick( this.showMeTheGraph( ) )
-        } else if ( state == false ) {
-          Interop.hideEdges( )
-        }
-      } )
-   window.bus.$on( 'my-selected-ids', state => {
+      this.showTheGraph = state
+      if ( state == true && this.model.Value == "SchemaBuilder" ) {
+        this.$nextTick( this.showMeTheGraph( ) )
+      } else if ( state == false ) {
+        Interop.hideEdges( )
+      }
+    } )
+
+    window.bus.$on( 'my-selected-ids', state => {
       this.showObjectsInTree = false;
       this.showObjectsInTree = true;
       this.selectedIds = JSON.parse( state );
-      console.log(this.selectedIds)
-
-
+      if ( this.objectIds.length > 0 ) {
+        console.log( "onselected" )
+        console.log( this.objectIds )
+        this.objectIdsGlobal = this.objectIds
+      }
     } )
 
-  
+    window.bus.$on( 'deselection-all', state => {
+      this.showObjectsInTree = false;
+      if ( this.objectIds.length > 0 ) {
+        console.log( "ondeselected" )
+        console.log( this.objectIds )
+        this.objectIdsGlobal = this.objectIds
+      }
+    } )
+  },
 
-},
+  updated( ) {
+    window.bus.$on( 'show-me-wut-u-got', state => {
+      if ( this.showTheObjects && this.model.Value == "SchemaBuilder" ) {
+        this.$nextTick( this.showMeTheObjects( ) )
+      }
+    } )
+
+    //if ( this.model.Value == "SchemaBuilder" ) {
+    //  this.objectIds = [ ]
+    //  this.collectGUIDs( this.model )
+    //  console.log( this.objectIds, 'from updated  ' )
+    //  window.bus.$emit( 'objects-Ids2', this.objectIds )
+    //}
+  }
 
 }
 </script>
