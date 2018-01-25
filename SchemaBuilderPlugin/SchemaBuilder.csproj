@@ -61,27 +61,6 @@
     <CodeAnalysisIgnoreBuiltInRules>false</CodeAnalysisIgnoreBuiltInRules>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Komon, Version=1.0.1.34, Culture=neutral, PublicKeyToken=1b2882fd93519dc6, processorArchitecture=MSIL">
-      <HintPath>..\packages\Komon.1.0.1.34\lib\portable-net40+sl50+win+wp80+Xamarin.iOS10+MonoAndroid10+MonoTouch10\Komon.dll</HintPath>
-    </Reference>
-    <Reference Include="Komon.Client, Version=1.0.1.34, Culture=neutral, PublicKeyToken=1b2882fd93519dc6, processorArchitecture=MSIL">
-      <HintPath>..\packages\Komon.Client.1.0.1.34\lib\portable-net40+sl50+win+wp80+Xamarin.iOS10+MonoAndroid10+MonoTouch10\Komon.Client.dll</HintPath>
-    </Reference>
-    <Reference Include="Komon.Client.Core, Version=1.0.1.34, Culture=neutral, PublicKeyToken=1b2882fd93519dc6, processorArchitecture=MSIL">
-      <HintPath>..\packages\Komon.Client.Core.1.0.1.34\lib\portable-net40+sl50+win+wp80+Xamarin.iOS10+MonoAndroid10+MonoTouch10\Komon.Client.Core.dll</HintPath>
-    </Reference>
-    <Reference Include="Komon.Core, Version=1.0.1.34, Culture=neutral, PublicKeyToken=1b2882fd93519dc6, processorArchitecture=MSIL">
-      <HintPath>..\packages\Komon.Core.1.0.1.34\lib\portable-net40+sl50+win+wp80+Xamarin.iOS10+MonoAndroid10+MonoTouch10\Komon.Core.dll</HintPath>
-    </Reference>
-    <Reference Include="Komon.PlatformService, Version=1.0.1.34, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Komon.PlatformService.NET40.1.0.1.34\lib\net40\Komon.PlatformService.dll</HintPath>
-    </Reference>
-    <Reference Include="Komon.Presentation, Version=1.0.1.34, Culture=neutral, PublicKeyToken=1b2882fd93519dc6, processorArchitecture=MSIL">
-      <HintPath>..\packages\Komon.Presentation.1.0.1.34\lib\net40\Komon.Presentation.dll</HintPath>
-    </Reference>
-    <Reference Include="Komon.Presentation.Core, Version=1.0.1.34, Culture=neutral, PublicKeyToken=1b2882fd93519dc6, processorArchitecture=MSIL">
-      <HintPath>..\packages\Komon.Presentation.Core.1.0.1.34\lib\net40\Komon.Presentation.Core.dll</HintPath>
-    </Reference>
     <Reference Include="Microsoft.Threading.Tasks, Version=1.0.12.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <HintPath>..\packages\Microsoft.Bcl.Async.1.0.168\lib\net40\Microsoft.Threading.Tasks.dll</HintPath>
     </Reference>
@@ -113,9 +92,6 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="System.Drawing" />
-    <Reference Include="System.IO, Version=2.6.8.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.Bcl.1.1.8\lib\net40\System.IO.dll</HintPath>
-    </Reference>
     <Reference Include="System.Net" />
     <Reference Include="System.Net.Http, Version=2.2.20.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <HintPath>..\packages\Microsoft.Net.Http.2.2.20\lib\net40\System.Net.Http.dll</HintPath>
@@ -128,18 +104,6 @@
     </Reference>
     <Reference Include="System.Net.Http.WebRequest, Version=2.2.20.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <HintPath>..\packages\Microsoft.Net.Http.2.2.20\lib\net40\System.Net.Http.WebRequest.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Reactive.Core, Version=2.2.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\packages\Rx-Core.2.2.2\lib\net40\System.Reactive.Core.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Reactive.Interfaces, Version=2.2.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\packages\Rx-Interfaces.2.2.2\lib\net40\System.Reactive.Interfaces.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Reactive.Linq, Version=2.2.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\packages\Rx-Linq.2.2.2\lib\net40\System.Reactive.Linq.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Reactive.PlatformServices, Version=2.2.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\packages\Rx-PlatformServices.2.2.2\lib\net40\System.Reactive.PlatformServices.dll</HintPath>
     </Reference>
     <Reference Include="System.Runtime, Version=2.6.8.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <HintPath>..\packages\Microsoft.Bcl.1.1.8\lib\net40\System.Runtime.dll</HintPath>

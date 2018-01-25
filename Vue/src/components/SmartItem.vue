@@ -229,7 +229,7 @@ export default {
       //  this.objectIdsGlobal = state
       //  console.log(this.objectIdsGlobal, "WTFisg2oingon????")
       //} )
-      
+
       window.bus.$on( 'objects-Ids2', state => {
         this.objectIdsGlobal = state
         console.log( this.objectIdsGlobal, "WTFisgoingon????" )
@@ -498,7 +498,7 @@ export default {
     } )
     window.bus.$on( 'add-properties', state => {
       this.myProperties = state
-      this.$nextTick( Interop.refreshSelected( ) )
+      //this.$nextTick( Interop.refreshSelected( ) )
     } )
     window.bus.$on( 'obj-name', state => {
       this.customName = state

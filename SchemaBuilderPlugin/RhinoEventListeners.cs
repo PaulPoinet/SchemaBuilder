@@ -18,6 +18,7 @@ namespace SchemaBuilder
 {
     internal class RhinoEventListeners
     {
+        
         public static ChromiumWebBrowser Browser { get; set; }
         /// <summary>
         /// Private constructor
