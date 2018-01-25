@@ -92,11 +92,20 @@ namespace SchemaBuilder
 
         public void SpreadObjects(double step, Boolean refresh)
         {
+            
             if (myDisplayBool == null)
             {
             }
             else
             {
+                Rhino.Display.RhinoView myViewport = Rhino.RhinoDoc.ActiveDoc.Views.ActiveView;
+                
+                Rhino.Display.RhinoViewport viewport = myViewport.ActiveViewport;
+                viewport.DisplayMode = Rhino.Display.DisplayModeDescription.FindByName("Wireframe");
+                if (step == 0.0)
+                    viewport.DisplayMode = Rhino.Display.DisplayModeDescription.FindByName("Copy of Artistic 01");
+                //else
+                    //viewport.DisplayMode = Rhino.Display.DisplayModeDescription.FindByName("Wireframe");
                 Rhino.Geometry.BoundingBox myGlobalBbox = new Rhino.Geometry.BoundingBox();
                 myGlobalBbox = Rhino.Geometry.BoundingBox.Empty;
                 List<Rhino.Geometry.Point3d> myCentroids = new List<Rhino.Geometry.Point3d>();
@@ -109,16 +118,14 @@ namespace SchemaBuilder
                     myCentroids.Clear();
                     foreach (Guid guid in allGuids)
                     {
-                        //Rhino.RhinoDoc.ActiveDoc.Views.Redraw();
                         RhinoObject foundObject = Rhino.RhinoDoc.ActiveDoc.Objects.Find(guid);
                         Rhino.Geometry.BoundingBox foundBbox = foundObject.Geometry.GetBoundingBox(true);
                         myGlobalBbox.Union(foundBbox);
                         myCentroids.Add(foundBbox.Center);
-
-                        //explosionCenter.
                         explosionCenter = myGlobalBbox.Center;
                     }
                     originalCentroids = myCentroids;
+                    
                 }
                 else
                 {
