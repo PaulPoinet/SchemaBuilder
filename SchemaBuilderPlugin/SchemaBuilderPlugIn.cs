@@ -1,6 +1,9 @@
 ﻿using CefSharp;
+using CefSharp.WinForms;
+using System.Diagnostics;
 using System.IO;
 using System.Reflection;
+using System.Windows.Forms;
 
 namespace SchemaBuilder
 {
@@ -14,6 +17,8 @@ namespace SchemaBuilder
     ///</summary>
     public class SchemaBuilderPlugIn : Rhino.PlugIns.PlugIn
     {
+        public static ChromiumWebBrowser m_browser;
+
         public SchemaBuilderPlugIn()
         {
             Instance = this;
@@ -35,14 +40,20 @@ namespace SchemaBuilder
         /// </summary>
         protected override Rhino.PlugIns.LoadReturnCode OnLoad(ref string errorMessage)
         {
+            Debug.WriteLine("Cef Loaded: " + Cef.IsInitialized, "SchemaBuilder");
             var panel_type = typeof(SchemaBuilderPanelControl);
             Rhino.UI.Panels.RegisterPanel(this, panel_type, "SchemaBuilder", SchemaBuilder.Properties.Resources.SchemaBuilder);
-            InitializeCef();
+            if (!Cef.IsInitialized)
+                InitializeCef();
+
+            InitializeBrowser();
+
             return Rhino.PlugIns.LoadReturnCode.Success;
         }
 
         void InitializeCef()
         {
+
             Cef.EnableHighDPISupport();
 
             string assemblyLocation = Assembly.GetExecutingAssembly().Location;
@@ -60,9 +71,47 @@ namespace SchemaBuilder
             settings.CefCommandLineArgs.Add("disable-gpu", "1");
 
             // Initialize cef with the provided settings
-            if (!Cef.IsInitialized)
-                Cef.Initialize(settings);
+
+            Cef.Initialize(settings);
+
         }
+
+        private void InitializeBrowser()
+        {
+
+            if (Cef.IsInitialized)
+            {
+
+                m_browser = new ChromiumWebBrowser("http://localhost:9090/");
+               
+                m_browser.BrowserSettings = new BrowserSettings
+                {
+                    FileAccessFromFileUrls = CefState.Enabled,
+                    UniversalAccessFromFileUrls = CefState.Enabled
+                };
+
+                
+                m_browser.Dock = DockStyle.Fill;
+
+                //m_browser.RegisterAsyncJsObject("InteropSB", new Interop(m_browser));
+            }
+            else
+            {
+                Debug.WriteLine("For some reason, Cef didn't initialize", "SchemaBuilder");
+            }
+
+        }
+
+        protected override void OnShutdown()
+        {
+            m_browser.Dispose();
+            Cef.Shutdown();
+
+            //Store.Dispose();
+            SchemaBuilderPlugIn.Instance.UserControl?.Dispose();
+            base.OnShutdown();
+        }
+
 
         /// <summary>
         /// Gets tabbed dockbar user control
