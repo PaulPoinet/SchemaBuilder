@@ -43,16 +43,22 @@
   </v-card>
     <ul>
       <smart-item :model="tree"></smart-item>
+    <compiling-menu>
+    </compiling-menu>
     </ul>
+
+
+
   </div>
 </template>
 <script>
 import SmartItem from './SmartItem.vue'
 import Data from './Data.js'
-
+import CompilingMenu from './CompilingMenu.vue'
 export default {
   components: {
     SmartItem,
+    CompilingMenu
   },
 
   data( ) {

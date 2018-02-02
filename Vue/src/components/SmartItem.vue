@@ -15,34 +15,26 @@
       <label v-if="editValue==false && !isFolder && lock" class="lockColor" v-bind:title="messageCantEdit"> {{objectValue}} </label>
       <span v-if="isFolder && model.children.length > 0" v-show="!open" class="redFont">{...+{{model.children.length}}}</span>
       <span>&nbsp;</span>
-      <span v-if="isFolder && model.children[0].Key == 'Id' && this.showObjectsInTree==true && contains(selectedIds, model.children[0].Value)[0]==true">
+      <span v-if="this.selectedInRhino == true">
       <v-icon class="makeSmall" small icon color="yellow">fa-cube</v-icon>
       <v-avatar class="red" size="18px" >
-        <span class="whiteFont">{{contains(selectedIds, model.children[0].Value)[1]}}</span>
+      <!--<span class="whiteFont">{{this.localIndex}}</span>-->
+       <span class="whiteFont">{{getIndices(model)[1]}}</span>
+      <!--<span class="whiteFont">{{this.indexRhinoObject}}</span>-->
       </v-avatar>
       </span>
-      <span v-if="isFolder && model.children[0].Key == 'Id' && contains(selectedIds, model.children[0].Value)[0]!=true || this.showObjectsInTree==false && isFolder && model.children[0].Key == 'Id'">
-      <v-icon class="makeSmall" small icon color="grey">fa-cube</v-icon>
+      <span v-if="isFolder && model.children[0].Key == 'Id' && this.selectedInRhino == false">
+      <v-icon class="makeSmall" small icon color="white">fa-cube</v-icon>
       <v-avatar class="black" size="18px" >
-        <!--<span class="whiteFont">{{contains(objectIds, model.children[0].Value)}}</span>-->
-      <span class="whiteFont">{{printstuff(model.children[0].Value)[1]}}</span>
+      <!--<span class="whiteFont">{{this.localIndex}}</span>-->
+      <span class="whiteFont">{{getIndices(model)[1]}}</span>
+      <!--<span class="whiteFont">{{this.indexRhinoObject}}</span>-->
       </v-avatar>
       </span>
       <v-tooltip right>
         <v-icon style="cursor: pointer;" @click="show" hover xs1 small flat color="grey lighten-2" class="makeSmall" slot="activator">more_vert</v-icon>
         <span>Options</span>
       </v-tooltip>
-      <!--<v-chip class="ma-0" small color="red" text-color="white" v-if="isFolder && model.children[0].Key == 'Id' && this.showObjectsInTree==true && contains(selectedIds, model.children[0].Value)[0]==true">
-        <v-icon class="makeSmall" small icon color="yellow">fa-cube</v-icon>
-        <v-avatar class="red" size="5px" >
-          <span class="whiteFont">{{contains(selectedIds, model.children[0].Value)[1]}}</span>
-        </v-avatar>
-        {{contains(selectedIds, model.children[0].Value)[1]}}
-      </v-chip>-->
-      <!--<v-badge color="red" v-if="this.objectKey=='Id' && this.showObjectsInTree==true && contains(selectedIds, this.objectValue)[0]==true">
-          <span slot="badge">{{contains(selectedIds, this.objectValue)[1]}}</span>
-          <v-icon class="makeSmall" small icon color="yellow">fa-cube</v-icon>
-        </v-badge>-->
       <v-menu transition="slide-x-transition" bottom right color="black" v-model="showMenu" absolute :position-x="x" :position-y="y">
         <v-list class="ma-0" dark dense>
           <v-list-tile>
@@ -68,9 +60,12 @@
               <span>Delete</span>
             </v-tooltip>
           </v-list-tile>
-          <v-list-tile>
+          <!--<v-list-tile>
             <obj-properties v-on:addmykids='addProperties'>
             </obj-properties>
+          </v-list-tile>-->
+          <v-list-tile>
+            <v-icon @click="PlugMyObject" style="cursor: pointer;" class="makeSmall" color="yellow">extension</v-icon>
           </v-list-tile>
           <v-list-tile>
             <v-tooltip right>
@@ -83,10 +78,16 @@
       <span>&nbsp;</span>
       <span class="redFont" v-if="index>=0 && showIndices">({{index}})</span>
     </div>
-    <ul v-sortable="{ onUpdate: onUpdate }" v-show="open" v-if="isFolder">
+    <!--<ul v-sortable="{ onUpdate: onUpdate }" v-show="open" v-if="isFolder">
       <draggable v-model="model.children" :options="{group:'item', name: 'item', pull:true, sort: true}" @start="drag=true" @end="drag=false" class="drag">
         <item class="item" v-for="(model, index) in model.children" :model="model" :index='index' @mouseover="isItObject" @mouseleave="hideThisObject" @deleteMe='deleteKid'></item>
-      </draggable>
+      </draggable>-->
+    <ul v-show="open" v-if="isFolder">
+      <!--///////////////////////////////////////////////////////////////////////////////////-->
+      <!--///////////////////////////////////////////////////////////////////////////////////-->
+      <item class="item" v-for="(model, index, guid) in model.children" :model="model" :guid="uuidv4( )" :index='index' @mouseover="isItObject" @mouseleave="hideThisObject" @deleteMe='deleteKid'></item>
+      <!--///////////////////////////////////////////////////////////////////////////////////-->
+      <!--///////////////////////////////////////////////////////////////////////////////////-->
       <div>
         <v-tooltip right>
           <v-icon style="cursor: pointer;" @click="showAddOptions" hover xs1 small flat color="grey lighten-1" class="makeSmall" slot="activator">add_to_photos</v-icon>
@@ -100,14 +101,18 @@
                 <span>Add Item</span>
               </v-tooltip>
             </v-list-tile>
-            <v-list-tile>
+            <!-- <v-list-tile>
               <obj-properties v-on:addmykids='addProperties'>
               </obj-properties>
+            </v-list-tile>-->
+            <v-list-tile>
+              <v-icon @click="PlugMyObject" style="cursor: pointer;" class="makeSmall" color="yellow">extension</v-icon>
             </v-list-tile>
           </v-list>
         </v-menu>
       </div>
     </ul>
+    
   </li>
 </template>
 <script>
@@ -121,6 +126,7 @@ export default {
   props: {
     model: Object,
     index: Number,
+    guid: String,
   },
 
   components: {
@@ -161,21 +167,39 @@ export default {
       objectIdsGlobal: [ ],
       GlobalEdges: [ ],
       GlobalSiblingEdges: [ ],
-      showObjectsInTree: false,
-      selectedIds: [ ],
 
+      selectedIds: [ ],
+      myDialog: false,
+      currentModel: null,
+      globalModel: null,
       //myRoot: null,
+      selectedInRhino: false,
+      indexRhinoObject: null,
+      localIndex: 0,
     }
   },
   computed: {
     isFolder( ) {
       return this.model.children && this.model.children.length
     },
+
+
+
+
   },
 
 
 
   methods: {
+
+    uuidv4( ) {
+      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace( /[xy]/g, function( c ) {
+        var r = Math.random( ) * 16 | 0,
+          v = c == 'x' ? r : ( r & 0x3 | 0x8 );
+        return v.toString( 16 );
+      } );
+    },
+
     onUpdate( ) {},
 
     show( e ) {
@@ -205,6 +229,7 @@ export default {
     nextTabEvent( ) {
       window.bus.$emit( 'change-to-schemasTab', true )
     },
+
     trashThis( ) {
       this.$emit( 'deleteMe', this.index )
       if ( this.isFolder ) this.model.children = [ ]
@@ -215,45 +240,21 @@ export default {
         this.open = !this.open
       }
     },
-    printstuff( obj ) {
-      if ( this.model.Value == "SchemaBuilder" ) {
-        this.objectIds = [ ]
-        this.collectGUIDs( this.model )
 
-        console.log( this.objectIds, 'from print' )
-      } else { console.log( "FAIL" ) }
-
-      //window.bus.$emit( 'show-me-wut-u-got' )
-      //this.$nextTick(console.log(this.objectIds, "whyEmptyyFFSssssssssssssssssss????"))
-      //window.bus.$on( 'objects-Ids', state => {
-      //  this.objectIdsGlobal = state
-      //  console.log(this.objectIdsGlobal, "WTFisg2oingon????")
-      //} )
-
-      window.bus.$on( 'objects-Ids2', state => {
-        this.objectIdsGlobal = state
-        console.log( this.objectIdsGlobal, "WTFisgoingon????" )
-      } )
-      console.log( this.objectIdsGlobal, "bitch????" )
-
-      //console.log(this.objectIds, "WTFisgoingonFFFFFFFFFFFFFF????")
-      //console.log(this.objectIdsGlobal, "WTFisgoingon????")
+    getIndices( obj ) {
+        window.bus.$on( 'objects-Ids', state => {
+          this.objectIdsGlobal = state
+          console.log(this.objectIdsGlobal, "from updated, global")
+        } )
       for ( var i = 0; i < this.objectIdsGlobal.length; i++ ) {
-        if ( this.objectIdsGlobal[ i ] === obj ) {
+        if ( this.objectIdsGlobal[ i ] === obj.children[ 0 ].Value ) {
           return [ true, i ];
         }
       }
-      return false;
-
+      return [false, "+"];
     },
 
-
-
-
-
     contains( a, obj ) {
-      //console.log( this.objectIds )
-      //console.log( "myobjectidsFFSkdjnkdng" )
       for ( var i = 0; i < a.length; i++ ) {
         if ( a[ i ] === obj ) {
           return [ true, i ];
@@ -261,11 +262,13 @@ export default {
       }
       return false;
     },
+
     unfoldAll( ) {
       if ( open ) {
         open = !open
       }
     },
+
     changeBehaviour( ) {
       this.lock = !this.lock
       this.drag = !this.drag
@@ -289,23 +292,23 @@ export default {
     },
 
 
-    addProperties( ) {
-      if ( !this.model.children ) {
-        this.$set( this.model, 'children', [ ] )
-        this.model.children.push( { Key: 'Id', Value: this.myObjectId }, {
+    addProperties( myModel ) {
+      if ( !myModel.children ) {
+        this.$set( myModel, 'children', [ ] )
+        myModel.children.push( { Key: 'Id', Value: this.myObjectId }, {
           Key: "RhinoProperties",
           Value: "example",
           children: [ ]
 
         } )
         for ( var i = 0; i < this.myProperties.length; i++ ) {
-          this.model.children[ 1 ].children.push( {
+          myModel.children[ 1 ].children.push( {
             Key: this.myProperties[ i ].split( ' : ' )[ 0 ],
             Value: this.myProperties[ i ].split( ' : ' )[ 1 ],
           } )
         }
       } else {
-        this.model.children.push( {
+        myModel.children.push( {
           Key: this.customName,
           Value: "myRhinoObject",
           children: [
@@ -318,15 +321,13 @@ export default {
           ]
         } )
         for ( var i = 0; i < this.myProperties.length; i++ ) {
-          this.model.children[ this.model.children.length - 1 ].children[ 1 ].children.push( {
+          myModel.children[ myModel.children.length - 1 ].children[ 1 ].children.push( {
             Key: this.myProperties[ i ].split( ' : ' )[ 0 ],
             Value: this.myProperties[ i ].split( ' : ' )[ 1 ],
           } )
         }
       }
-      // if(this.showTheObjects && this.model.children[ 0 ].Key == "Id"){
-      //   Interop.showObject( this.model.children[ 0 ].Value)
-      //}
+
       if ( this.showTheObjects ) {
         window.bus.$emit( 'show-me-wut-u-got' )
       }
@@ -431,27 +432,18 @@ export default {
       }
     },
 
-    showMeTheObjects( ) {
-      //if ( this.model.Value == "SchemaBuilder" ) {
-      Interop.hideObjects( )
+    showMeTheObjects( myModel ) {
+      Interop.hideObjects( ) ///////////////////
       this.objectIds = [ ]
-      this.collectGUIDs( this.model )
-      //console.log( this.objectIds )
-      window.bus.$emit( 'objects-Ids', this.objectIds )
-      Interop.showObjects( JSON.stringify( this.objectIds ) )
-    },
-
-    collectTheObjects( ) {
-      //console.log( this.objectIds )
       if ( this.model.Value == "SchemaBuilder" ) {
-        this.objectIds = [ ]
         this.collectGUIDs( this.model )
-        return this.objectIds
+        Interop.showObjects( JSON.stringify( this.objectIds ) ) ///////////////////
+      } else {
+        console.log( this.model, "didntgetit" )
       }
 
-      //console.log( this.objectIds )
-      //return this.objectIds;
     },
+
 
     showMeTheGraph( ) {
       Interop.hideEdges( ) // works that way...
@@ -461,26 +453,52 @@ export default {
       console.log( this.GlobalEdges )
       console.log( this.GlobalSiblingEdges )
       Interop.showEdges( JSON.stringify( this.GlobalEdges ) )
-    }
+    },
 
+    PlugMyObject( ) {
+      console.log( 'hey' )
+      console.log( this.guid, "found you MOTHERFUCKER" )
+      window.bus.$emit( 'launch-props', [ true, this.model, this.guid ] )
+      Interop.onClickProperties( )
+    },
+
+    findModelFromTreeGUID( inputTreeGUID ) {
+      for ( var i = 0; i < this.model.children.length; i++ ) {
+        if ( this.model.children[ i ].children && this.model.children[ i ].children.length ) {
+          this.findModelFromTreeGUID( this.model.children[ i ] )
+        } else if ( this.guid == inputTreeGUID ) {
+          //console.log(this.guid, "WOWFOUNDIT")
+        } else {}
+      }
+    },
   },
 
   mounted( ) {
 
-    if ( this.model.Value == "SchemaBuilder" ) {
-      this.objectIds = [ ]
-      this.collectGUIDs( this.model )
-      console.log( this.objectIds, 'from updated  ' )
-      window.bus.$emit( 'objects-Ids2', this.objectIds )
-      console.log("FILSDEPUTE")
-    }
+    window.bus.$on( 'test', state => {
+      if ( this.guid == state[ 0 ] ) { // makes sure it adds to the triggered model
+        this.myObjectId = state[ 1 ]
+        this.myProperties = state[ 2 ]
+        this.addProperties( this.model )
+        window.bus.$emit( 'collect-guids' )
+        //this.vm.$once('hook:attached', () => window.bus.$emit( 'collect-guids' ))
+
+
+      }
+    window.bus.$on( 'collect-guids', state => {
+      if ( this.model.Value == "SchemaBuilder" ) {
+       this.objectIds = [ ]
+        this.collectGUIDs( this.model )
+        window.bus.$emit( 'objects-Ids', this.objectIds )
+      }
+    } )
+
+    } )
 
     window.bus.$on( 'show-me-wut-u-got', state => {
       if ( this.showTheObjects && this.model.Value == "SchemaBuilder" ) {
-        this.$nextTick( this.showMeTheObjects( ) )
-
+        this.$nextTick( this.showMeTheObjects( this.currentModel ) )
       }
-      //window.bus.$emit( 'objects-Ids', this.objectIds )
     } )
     window.bus.$on( 'show-me-the-graph', state => {
       if ( this.showTheGraph && this.model.Value == "SchemaBuilder" ) {
@@ -496,16 +514,11 @@ export default {
     window.bus.$on( 'show-global-indices', state => {
       this.showIndices = state
     } )
-    window.bus.$on( 'add-properties', state => {
-      this.myProperties = state
-      //this.$nextTick( Interop.refreshSelected( ) )
-    } )
+
     window.bus.$on( 'obj-name', state => {
       this.customName = state
     } )
-    window.bus.$on( 'obj-Id', state => {
-      this.myObjectId = state
-    } )
+
 
     window.bus.$on( 'show-global-objects', state => {
       this.showTheObjects = state
@@ -526,39 +539,40 @@ export default {
     } )
 
     window.bus.$on( 'my-selected-ids', state => {
-      this.showObjectsInTree = false;
-      this.showObjectsInTree = true;
-      this.selectedIds = JSON.parse( state );
-      if ( this.objectIds.length > 0 ) {
-        console.log( "onselected" )
-        console.log( this.objectIds )
-        this.objectIdsGlobal = this.objectIds
+
+
+
+      if ( !this.isFolder ) return
+      if ( this.model.children[ 0 ].Key !== 'Id' ) return
+
+
+      //this.selectedInRhino = this.contains( JSON.parse( state ),  this.model.children[0].Value )
+
+      if ( this.contains( JSON.parse( state ), this.model.children[ 0 ].Value ) ) {
+        this.selectedInRhino = true
+
+      } else {
+        this.selectedInRhino = false
+
       }
+
+
+
+      //this.selectedIds = JSON.parse( state );
+
     } )
 
     window.bus.$on( 'deselection-all', state => {
-      this.showObjectsInTree = false;
-      if ( this.objectIds.length > 0 ) {
-        console.log( "ondeselected" )
-        console.log( this.objectIds )
-        this.objectIdsGlobal = this.objectIds
-      }
+
+
+      this.selectedInRhino = false
+
     } )
   },
 
   updated( ) {
-    window.bus.$on( 'show-me-wut-u-got', state => {
-      if ( this.showTheObjects && this.model.Value == "SchemaBuilder" ) {
-        this.$nextTick( this.showMeTheObjects( ) )
-      }
-    } )
 
-    //if ( this.model.Value == "SchemaBuilder" ) {
-    //  this.objectIds = [ ]
-    //  this.collectGUIDs( this.model )
-    //  console.log( this.objectIds, 'from updated  ' )
-    //  window.bus.$emit( 'objects-Ids2', this.objectIds )
-    //}
+
   }
 
 }

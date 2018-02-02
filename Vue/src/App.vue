@@ -29,24 +29,36 @@
         </v-tabs-content>
       </v-tabs-items>
     </v-tabs>
+    <obj-properties-global v-model="myDialog">
+    </obj-properties-global>
+
+
   </v-app>
 </template>
 <script>
+
 import GlobalControls from './components/GlobalControls.vue'
 import CustomSchemas from './components/CustomSchemas.vue'
 import Data from './components/Data.js'
+import ObjPropertiesGlobal from './components/ObjPropertiesGlobal.vue'
+import CompilingMenu from './components/CompilingMenu.vue'
 
 export default {
   name: 'app',
   components: {
     GlobalControls,
-    CustomSchemas
+    ObjPropertiesGlobal,
+    CustomSchemas,
+    CompilingMenu
+
   },
 
   data( ) {
     return {
       tree: Data,
       active: null,
+      myDialog: false,
+     
     }
   },
 
@@ -67,12 +79,14 @@ export default {
   mounted( ) {
     window.bus.$on( 'change-to-schemasTab', state => { this.goToPropsTab( ) } )
     window.bus.$on('change-to-treeTab', state => { this.goToTreeTab() })
-  },
-
-  created( ) {
-    //window.$bus.$on('change-to-propsTab', this.test)
+    window.bus.$on('launch-props', state => { 
+      console.log(this.myDialog)
+      this.myDialog = true 
+      console.log(this.myDialog)
+    })
   },
 }
+
 </script>
 <style>
 #app {

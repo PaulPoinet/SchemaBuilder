@@ -3,8 +3,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-
+using System.Drawing;
+using Rhino.Geometry;
 using Rhino.Display;
+using Rhino;
 
 namespace SchemaBuilder
 {
@@ -12,13 +14,14 @@ namespace SchemaBuilder
     public class SchemaBuilderDisplay : Rhino.Display.DisplayConduit
     {
         public List<Guid> Ids = new List<Guid>();
-        
 
+        
         protected override void CalculateBoundingBox(Rhino.Display.CalculateBoundingBoxEventArgs e)
         {
             base.CalculateBoundingBox(e);
             //e.IncludeBoundingBox(new Rhino.Geometry.Point3d(0, 0, 0));
         }
+
         protected override void PreDrawObjects(Rhino.Display.DrawEventArgs e)
         {
             base.PreDrawObjects(e);
@@ -26,43 +29,60 @@ namespace SchemaBuilder
 
 
 
-            for (int i = 0; i < Ids.Count; i++) {
+            for (int i = 0; i < Ids.Count; i++)
+            {
                 RhinoObject foundObject = Rhino.RhinoDoc.ActiveDoc.Objects.Find(Ids[i]);
                 Rhino.Geometry.BoundingBox bbox = foundObject.Geometry.GetBoundingBox(true);
-                //e.Display.DrawBoxCorners(bbox, System.Drawing.Color.DarkGray, 3, 4);
-                //e.Display.DrawDot(bbox.Center, Ids[i].ToString());
+                bbox.Inflate(2);
 
-                Rhino.Display.RhinoView myViewport = Rhino.RhinoDoc.ActiveDoc.Views.ActiveView;
-                Rhino.Display.RhinoViewport viewport = myViewport.ActiveViewport;
-                Rhino.Geometry.Plane myFrustumPlane = new Rhino.Geometry.Plane();
-                viewport.GetFrustumFarPlane(out myFrustumPlane);
-                myFrustumPlane.Origin = bbox.Center;
-                Rhino.Geometry.Circle myFrustumCircle = new Rhino.Geometry.Circle();
-                myFrustumCircle.Plane = myFrustumPlane;
-                myFrustumCircle.Radius = bbox.Diagonal.Length / 2;
-                
+                e.Display.EnableDepthWriting(false);
+                e.Display.DrawBoxCorners(bbox, System.Drawing.Color.DarkGray, 3, 4);
+                e.Display.EnableDepthWriting(true);
 
-                Rhino.Geometry.NurbsCurve myFrustumCrv = myFrustumCircle.ToNurbsCurve();
-                
-                
-                double[] tlist = myFrustumCrv.DivideByLength(2, true);
-                if (tlist.Length % 2 == 0)
+
+            }
+            
+            Rhino.RhinoDoc.ActiveDoc.Views.Redraw();
+
+        }
+        protected override void DrawOverlay(Rhino.Display.DrawEventArgs e)
+        {
+            base.DrawOverlay(e);
+
+            List<Guid> noDupGUIDs = new List<Guid>();
+            
+            for (int i = 0; i < Ids.Count; i++)
+            {
+                if (noDupGUIDs.Contains(Ids[i]))
                 {
-                    tlist = myFrustumCrv.DivideByCount(tlist.Length, true);
+
                 }
                 else
                 {
-                    tlist = myFrustumCrv.DivideByCount(tlist.Length+1, true);
-                }
-                Rhino.Geometry.Curve[] crvsToRender = myFrustumCrv.Split(tlist);
-                //e.Display.DrawDot(bbox.GetCorners()[4], i.ToString(), System.Drawing.Color.Red, System.Drawing.Color.White);
-                for (int j = 0; j < crvsToRender.Length; j++)
-                {
-                    if (j % 2 == 0)
-                        e.Display.DrawCurve(crvsToRender[j], System.Drawing.Color.Red, 3);
-                }
-            }
+                    noDupGUIDs.Add(Ids[i]);
 
+                    //RhinoApp.WriteLine(i.ToString());
+                    RhinoObject foundObject = Rhino.RhinoDoc.ActiveDoc.Objects.Find(Ids[i]);
+                    int isSelected = foundObject.IsSelected(false);
+                    Rhino.Geometry.BoundingBox bbox = foundObject.Geometry.GetBoundingBox(true);
+                    bbox.Inflate(2);
+                    //e.Display.DrawDot(bbox.c, i.ToString(), System.Drawing.Color.Black, System.Drawing.Color.White);
+
+                    if (isSelected > 0)
+                    {
+                        //e.Display.DrawDot(bbox.GetCorners()[7], i.ToString(), System.Drawing.Color.Red, System.Drawing.Color.White);
+                        e.Display.DrawDot(bbox.Center, i.ToString(), System.Drawing.Color.Red, System.Drawing.Color.White);
+                    }
+                    else
+                    {
+                        //e.Display.DrawDot(bbox.GetCorners()[7], i.ToString(), System.Drawing.Color.Black, System.Drawing.Color.White);
+                        e.Display.DrawDot(bbox.Center, i.ToString(), System.Drawing.Color.Black, System.Drawing.Color.White);
+                    }
+                }
+                
+                
+            }
+            
             Rhino.RhinoDoc.ActiveDoc.Views.Redraw();
 
         }
@@ -83,6 +103,7 @@ namespace SchemaBuilder
             {
                 RhinoObject foundObject = Rhino.RhinoDoc.ActiveDoc.Objects.Find(Ids[i]);
                 Rhino.Geometry.BoundingBox bbox = foundObject.Geometry.GetBoundingBox(true);
+                bbox.Inflate(2);
                 e.Display.DrawBoxCorners(bbox, System.Drawing.Color.DarkGray, 3, 4);
                 //e.Display.DrawDot(bbox.Center, Ids[i].ToString());
             }
@@ -116,7 +137,7 @@ namespace SchemaBuilder
                     Rhino.Geometry.Line graphEdge = new Rhino.Geometry.Line();
                     graphEdge.From = ce0;
                     graphEdge.To = ce1;
-                    e.Display.DrawLineArrow(graphEdge, System.Drawing.Color.Black, 5, 5);
+                    e.Display.DrawLineArrow(graphEdge, System.Drawing.Color.Black, 5, 4);
                 }
 
             }
@@ -145,9 +166,69 @@ namespace SchemaBuilder
 
             RhinoObject foundObject = Rhino.RhinoDoc.ActiveDoc.Objects.Find(Id);
             Rhino.Geometry.BoundingBox bbox = foundObject.Geometry.GetBoundingBox(true);
+            bbox.Inflate(2);
+            e.Display.EnableDepthWriting(false);
             List<Rhino.Geometry.Point3d> bboxCorners = bbox.GetCorners().ToList();
             List<Rhino.Geometry.Line> bboxEdges = bbox.GetEdges().ToList();
             e.Display.DrawBoxCorners(bbox, System.Drawing.Color.Red, 3, 4);
+
+            System.Drawing.Color myCol = System.Drawing.Color.DarkRed;
+
+            e.Display.EnableDepthWriting(true);
+            e.Display.EnableDepthWriting(false);
+            switch (foundObject.ObjectType)
+            {
+                case Rhino.DocObjects.ObjectType.Point:
+                    e.Display.DrawPoint(((Rhino.Geometry.Point)foundObject.Geometry).Location, PointStyle.X, 2, myCol);
+                    break;
+
+                case Rhino.DocObjects.ObjectType.Curve:
+                    e.Display.DrawCurve((Rhino.Geometry.Curve)foundObject.Geometry, myCol, 4);
+                    break;
+
+                case Rhino.DocObjects.ObjectType.Extrusion:
+                    DisplayMaterial eMaterial = new DisplayMaterial(myCol, 0.5);
+                    e.Display.DrawBrepShaded(((Rhino.Geometry.Extrusion)foundObject.Geometry).ToBrep(), eMaterial);
+                    break;
+                case Rhino.DocObjects.ObjectType.Brep:
+                    DisplayMaterial bMaterial = new DisplayMaterial(myCol, 0.5);
+                    e.Display.DrawBrepShaded((Brep)foundObject.Geometry, bMaterial);
+                    //e.Display.DrawBrepWires((Brep)obj, Color.DarkGray, 1);
+                    break;
+
+                case Rhino.DocObjects.ObjectType.Mesh:
+                    var mesh = foundObject.Geometry as Rhino.Geometry.Mesh;
+                    if (mesh.VertexColors.Count > 0)
+                    {
+                        for (int i = 0; i < mesh.VertexColors.Count; i++)
+                            mesh.VertexColors[i] = Color.FromArgb(100, mesh.VertexColors[i]);
+
+                        e.Display.DrawMeshFalseColors(mesh);
+                    }
+                    else
+                    {
+                        DisplayMaterial mMaterial = new DisplayMaterial(myCol, 0.5);
+                        e.Display.DrawMeshShaded(mesh, mMaterial);
+                    }
+                    //e.Display.DrawMeshWires((Mesh)obj, Color.DarkGray);
+                    break;
+
+                case Rhino.DocObjects.ObjectType.TextDot:
+                    //e.Display.Draw3dText( ((TextDot)obj).Text, Colors[count], new Plane(((TextDot)obj).Point));
+                    var textDot = (TextDot)foundObject.Geometry;
+                    e.Display.DrawDot(textDot.Point, textDot.Text, myCol, Color.White);
+
+                    break;
+
+                case Rhino.DocObjects.ObjectType.Annotation:
+
+                    var textObj = (Rhino.Geometry.TextEntity)foundObject.Geometry;
+                    e.Display.Draw3dText(textObj.Text, Color.Black, textObj.Plane, textObj.TextHeight, Rhino.RhinoDoc.ActiveDoc.Fonts[textObj.FontIndex].FaceName);
+                    break;
+            }
+            e.Display.EnableDepthWriting(true);
+
+
 
 
             foreach (Rhino.Geometry.Line ln in bboxEdges)
@@ -166,6 +247,7 @@ namespace SchemaBuilder
                     RhinoObject foundObject1 = Rhino.RhinoDoc.ActiveDoc.Objects.Find(li[1]);
                     Rhino.Geometry.Point3d ce0 = foundObject0.Geometry.GetBoundingBox(true).Center;
                     Rhino.Geometry.BoundingBox bboxKid = foundObject1.Geometry.GetBoundingBox(true);
+                    bboxKid.Inflate(2);
                     List<Rhino.Geometry.Point3d> bboxCornersKid = bboxKid.GetCorners().ToList();
                     List<Rhino.Geometry.Line> bboxEdgesKid = bboxKid.GetEdges().ToList();
                     e.Display.DrawBoxCorners(bboxKid, colorKid, 3, 4);
@@ -205,7 +287,7 @@ namespace SchemaBuilder
                     graphEdge.From = ce0;
                     graphEdge.To = ce1;
 
-                    e.Display.DrawLineArrow(graphEdge, System.Drawing.Color.Red, 5, 8);
+                    e.Display.DrawLineArrow(graphEdge, System.Drawing.Color.DarkRed, 7, 4);
                 }
             }
             Rhino.RhinoDoc.ActiveDoc.Views.Redraw();
@@ -247,23 +329,24 @@ namespace SchemaBuilder
             base.DrawOverlay(e);
             Rhino.Display.RhinoView myViewport = Rhino.RhinoDoc.ActiveDoc.Views.ActiveView;
             Rhino.Display.RhinoViewport viewport = myViewport.ActiveViewport;
+
             for (int i = 0; i < Ids.Count; i++)
             {
                 RhinoObject foundObject = Rhino.RhinoDoc.ActiveDoc.Objects.Find(Ids[i]);
                 Rhino.Geometry.BoundingBox bbox = foundObject.Geometry.GetBoundingBox(true);
                 Rhino.Geometry.Plane myFrustumPlane = new Rhino.Geometry.Plane();
-                viewport.GetFrustumFarPlane(out myFrustumPlane);
-                myFrustumPlane.Origin = bbox.Center;
-                Rhino.Geometry.Circle myFrustumCircle = new Rhino.Geometry.Circle();
-                myFrustumCircle.Plane = myFrustumPlane;
-                myFrustumCircle.Radius = bbox.Diagonal.Length / 2;
-                Rhino.Geometry.Curve myFrustumCurve = myFrustumCircle.ToNurbsCurve();
+                //viewport.GetFrustumFarPlane(out myFrustumPlane);
+                //myFrustumPlane.Origin = bbox.Center;
+                //Rhino.Geometry.Circle myFrustumCircle = new Rhino.Geometry.Circle();
+                //myFrustumCircle.Plane = myFrustumPlane;
+                //myFrustumCircle.Radius = bbox.Diagonal.Length / 2;
+                //Rhino.Geometry.Curve myFrustumCurve = myFrustumCircle.ToNurbsCurve();
 
-                myFrustumCurve.Domain = new Rhino.Geometry.Interval(0.0,1.0);
+                //myFrustumCurve.Domain = new Rhino.Geometry.Interval(0.0,1.0);
 
 
 
-                e.Display.DrawDot(myFrustumCurve.PointAtNormalizedLength(0.4), i.ToString(), System.Drawing.Color.Red, System.Drawing.Color.White);
+                //e.Display.DrawDot(myFrustumCurve.PointAtNormalizedLength(0.4), i.ToString(), System.Drawing.Color.Red, System.Drawing.Color.White);
 
             }
             Rhino.RhinoDoc.ActiveDoc.Views.Redraw();

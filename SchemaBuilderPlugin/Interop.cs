@@ -180,6 +180,43 @@ namespace SchemaBuilder
             }
         }
 
+        public void CheckIfSomethingIsSelected()
+        {
+            Rhino.RhinoApp.WriteLine("izMe");
+            var oes = new ObjectEnumeratorSettings
+            {
+                SelectedObjectsFilter = true,
+                IncludeLights = false,
+                IncludeGrips = false,
+                IncludePhantoms = false
+            };
+
+            var objs = RhinoDoc.ActiveDoc.Objects.GetObjectList(oes).ToArray();
+            int numObjSel = objs.Length;
+            if (numObjSel == 0)
+            {
+                //Rhino.RhinoApp.WriteLine("no object is selected");
+                var script = string.Format("window.bus.$emit('{0}')", "no-object-selected");
+                Browser.GetMainFrame().EvaluateScriptAsync(script);
+            }
+            else if (numObjSel == 1) {
+                //Rhino.RhinoApp.WriteLine("one object is selected");
+                var script = string.Format("window.bus.$emit('{0}')", "one-object-selected");
+                Browser.GetMainFrame().EvaluateScriptAsync(script);
+            }
+            else
+            {
+                //Rhino.RhinoApp.WriteLine("more than one object are selected");
+                var script = string.Format("window.bus.$emit('{0}')", "one-object-selected");
+                Browser.GetMainFrame().EvaluateScriptAsync(script);
+            }
+            //Rhino.RhinoApp.WriteLine(objs.Length.ToString());
+        }
+
+
+
+
+
         public void OnClickProperties()
         {
             RhinoApp.WriteLine("Hi there.");
