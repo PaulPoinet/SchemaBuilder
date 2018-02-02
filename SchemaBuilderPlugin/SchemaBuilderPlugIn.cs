@@ -89,11 +89,10 @@ namespace SchemaBuilder
                     FileAccessFromFileUrls = CefState.Enabled,
                     UniversalAccessFromFileUrls = CefState.Enabled
                 };
-
                 
                 m_browser.Dock = DockStyle.Fill;
 
-                //m_browser.RegisterAsyncJsObject("InteropSB", new Interop(m_browser));
+                m_browser.RegisterAsyncJsObject("Interop", new Interop(m_browser));
             }
             else
             {
