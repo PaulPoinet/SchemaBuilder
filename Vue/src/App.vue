@@ -31,8 +31,6 @@
     </v-tabs>
     <obj-properties-global v-model="myDialog">
     </obj-properties-global>
-
-
   </v-app>
 </template>
 <script>

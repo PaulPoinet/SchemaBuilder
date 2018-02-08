@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 using Newtonsoft.Json;
+using System.Dynamic;
 
 namespace SchemaBuilder
 {
@@ -18,6 +19,8 @@ namespace SchemaBuilder
     {
 
         private static ChromiumWebBrowser Browser { get; set; }
+
+        public RhinoObject SelectedObject { get; set; }
 
         public SchemaBuilderDisplay myDisplay { get; set; }
         public bool? myDisplayBool = null;
@@ -101,10 +104,7 @@ namespace SchemaBuilder
                 Rhino.Display.RhinoView myViewport = Rhino.RhinoDoc.ActiveDoc.Views.ActiveView;
                 
                 Rhino.Display.RhinoViewport viewport = myViewport.ActiveViewport;
-                viewport.DisplayMode = Rhino.Display.DisplayModeDescription.FindByName("Wireframe");
-                if (step == 0.0)
-                    viewport.DisplayMode = Rhino.Display.DisplayModeDescription.FindByName("Copy of Artistic 01");
-                //else
+
                     //viewport.DisplayMode = Rhino.Display.DisplayModeDescription.FindByName("Wireframe");
                 Rhino.Geometry.BoundingBox myGlobalBbox = new Rhino.Geometry.BoundingBox();
                 myGlobalBbox = Rhino.Geometry.BoundingBox.Empty;
@@ -198,8 +198,11 @@ namespace SchemaBuilder
                 //Rhino.RhinoApp.WriteLine("no object is selected");
                 var script = string.Format("window.bus.$emit('{0}')", "no-object-selected");
                 Browser.GetMainFrame().EvaluateScriptAsync(script);
+                //RhinoObject selectedObject = objs[0];
+                
             }
             else if (numObjSel == 1) {
+                SelectedObject = objs[0];
                 //Rhino.RhinoApp.WriteLine("one object is selected");
                 var script = string.Format("window.bus.$emit('{0}')", "one-object-selected");
                 Browser.GetMainFrame().EvaluateScriptAsync(script);
@@ -207,14 +210,126 @@ namespace SchemaBuilder
             else
             {
                 //Rhino.RhinoApp.WriteLine("more than one object are selected");
-                var script = string.Format("window.bus.$emit('{0}')", "one-object-selected");
+                var script = string.Format("window.bus.$emit('{0}')", "multiple-objects-selected");
                 Browser.GetMainFrame().EvaluateScriptAsync(script);
             }
             //Rhino.RhinoApp.WriteLine(objs.Length.ToString());
         }
 
+        public void IterateThroughJSON(dynamic myObj, Rhino.Collections.ArchivableDictionary myDict)
+        {
+            
 
 
+            if (((IDictionary<String, object>)myObj).ContainsKey("children"))
+            {
+                Rhino.RhinoApp.WriteLine("is Folder");
+
+                //myDict.Set(myObj.Key)
+
+
+                List<object> myObjChildrenKeys = new List<object>();
+
+                for (int i = 0; i < myObj.children.Count; i++)
+                {
+                    myObjChildrenKeys.Add(myObj.children[i].Key);
+                    dynamic kvp = myObj.children[i];
+
+                    System.Collections.ArrayList arrayList = new System.Collections.ArrayList(myObjChildrenKeys);
+
+
+                    int first = arrayList.IndexOf(kvp.Key.ToString());
+                    int last = arrayList.LastIndexOf(kvp.Key.ToString());
+                    //Rhino.RhinoApp.WriteLine(first.ToString(), "thatsmyobj");
+
+                    if (((IDictionary<String, object>)kvp).ContainsKey("children"))
+                    {
+
+                        Rhino.Collections.ArchivableDictionary newDict = new Rhino.Collections.ArchivableDictionary();
+
+
+
+
+                        if (first != -1 && first != last)
+                        {
+                            Rhino.RhinoApp.WriteLine("found it!");
+                            myDict.Set(kvp.Key + " (at index " + i + ")", newDict);
+                        }
+                        else
+                            myDict.Set(kvp.Key, newDict);
+                        
+                        IterateThroughJSON(kvp, newDict);
+                    }
+                    else
+                    {
+                        if (kvp.Key == "Id")
+                        {
+                            Rhino.RhinoApp.WriteLine(kvp.Value);
+                            Guid myGuid = new Guid(kvp.Value);
+                            RhinoObject foundObject = Rhino.RhinoDoc.ActiveDoc.Objects.Find(myGuid);
+                            myDict.Set("Geometry", foundObject.Geometry);
+                            
+                        }
+                        else
+                        {
+
+
+                            if (first != -1 && first != last)
+                            {
+                                Rhino.RhinoApp.WriteLine("found it!");
+                                myDict.Set(kvp.Key + " (at index " + i + ")", kvp.Value);
+                            }
+                            else
+                                myDict.Set(kvp.Key, kvp.Value);
+                        }
+                    }
+                }
+            }
+            else { // no children
+                Rhino.RhinoApp.WriteLine(myObj.Value);
+                myDict.Set(myObj.Key, myObj.Value);
+            }
+        }
+
+
+        public void JSONToUD(string JSON)
+        {
+            dynamic obj = JsonConvert.DeserializeObject<ExpandoObject>(JSON);
+            //Rhino.DocObjects.Custom.UserDictionary UD = new Rhino.DocObjects.Custom.UserDictionary();
+            Rhino.Collections.ArchivableDictionary initDict = new Rhino.Collections.ArchivableDictionary();
+            //Rhino.Collections.ArchivableDictionary dict = SelectedObject.Attributes.UserDictionary;
+            //Rhino.RhinoApp.WriteLine(obj)
+
+            IterateThroughJSON(obj, initDict);
+            //dict.Set(obj.Key, initDict);
+
+
+            ///////// Find selected Object(s) /////////
+            var oes = new ObjectEnumeratorSettings
+            {
+                SelectedObjectsFilter = true,
+                IncludeLights = false,
+                IncludeGrips = false,
+                IncludePhantoms = false
+            };
+
+            List<RhinoObject> objs = RhinoDoc.ActiveDoc.Objects.GetObjectList(oes).ToList();
+
+            foreach (RhinoObject rhObj in objs)
+            {
+                Rhino.Collections.ArchivableDictionary dict = rhObj.Attributes.UserDictionary;
+                dict.Set(obj.Key, initDict);
+                rhObj.Geometry.UserDictionary.Set("sxbuilder", dict);
+                rhObj.Geometry.SetUserString("sxbuilder", "true");
+            }
+
+            
+
+            //SelectedObject.Geometry.UserData.
+
+            //SelectedObject.Geometry.UserDictionary.
+
+        }
 
 
         public void OnClickProperties()

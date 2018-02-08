@@ -2,11 +2,20 @@
   <div>
     <v-dialog v-model="dialogBool" scrollable max-width="400px">
       <v-card>
-        <v-card-title class="headline">Select some properties!</v-card-title>
-        <v-card-title v-if="myDict">Id: {{myDict["ObjectId"]}}</v-card-title>
-        <v-flex xs10>
-          <v-text-field class="ma-3" name="whatever" label="Object's Name" v-model="inputText" dark></v-text-field>
-        </v-flex>
+        <v-card-title class="headline">
+          <v-icon color="blue">playlist_add_check</v-icon>&nbsp;Select some properties!</v-card-title>
+
+        <span v-if="myDict" class="pl-4">
+          <kbd>Guid:</kbd>&nbsp;<code>{{myDict["ObjectId"]}}</code>
+        </span>
+        <br>
+        <v-layout row>
+          <v-flex xs8 class="pl-4">
+            <v-text-field name="whatever" label="Object's Name" v-model="inputText" dark></v-text-field>
+          </v-flex>
+        </v-layout>
+
+        <v-divider></v-divider>
         <v-card-text style="height: 300px;">
           <v-checkbox class="ma-0" v-for="(value, key) in myDict" v-bind:label="`${key.toString()} : ${value.toString()}`" v-model="props" v-bind:value="`${key} : ${value}`" hide-details color="white"></v-checkbox>
         </v-card-text>
@@ -51,7 +60,7 @@ export default {
       saveSchema: false,
       dialogBool: false,
       myDict: null,
-      inputText: "myRhinoObject",
+      inputText: "MyObjectName",
       props: [ ],
       myModelID: null,
     }
@@ -73,12 +82,23 @@ export default {
 
     attachProps( ) {
       this.dialogBool = false
-      window.bus.$emit( 'test', [this.myModelID, this.myDict[ "ObjectId" ], this.props]  )
-      window.bus.$emit( 'obj-name', this.inputText )
-      this.$nextTick(this.props = [ ]); // Refresh Dictionaries - reinitialize the values
+      window.bus.$emit( 'test', [ this.myModelID, this.myDict[ "ObjectId" ], this.props, this.inputText ] )
+      this.$nextTick(window.bus.$emit( 'obj-name', this.inputText ))
+      this.$nextTick( this.props = [ ] ); // Refresh Dictionaries - reinitialize the values
+      this.$nextTick( this.inputText = "MyObjectName" ); // Refresh Name - reinitialize the value
     },
   },
   mounted( ) {
+    window.bus.$on( 'launch-props', state => {
+      this.dialogBool = state[ 0 ]
+      this.myModelID = state[ 2 ]
+    } )
+
+    window.bus.$on( 'get-properties', state => {
+      this.myDict = JSON.parse( state );
+    } )
+  },
+  updated(){
     window.bus.$on( 'launch-props', state => {
       this.dialogBool = state[ 0 ]
       this.myModelID = state[ 2 ]
@@ -91,4 +111,9 @@ export default {
 }
 </script>
 <style>
+code {
+  font-family: monospace;
+  color: white;
+  background-color: #303030;
+}
 </style>

@@ -33,14 +33,16 @@
         </v-btn>
         <span>Show/Hide indices</span>
       </v-tooltip>-->
+      
+      <v-slider label="Expand" class="pl-4" v-model="value1" step="40" v-bind:max="400" color="red" thumb-label ticks dark append-icon="zoom_out_map"></v-slider>
+      
     </div>
-    <br>
-    <br />
-  <v-card class="ma-3">
-    <v-card-text>
-      <v-slider  label="Spread Objects" v-model="value1" step="0" color="red" append-icon="filter_center_focus"></v-slider>
-    </v-card-text>
-  </v-card>
+     
+
+                 
+
+              
+  
     <ul>
       <smart-item :model="tree"></smart-item>
     <compiling-menu>
@@ -75,7 +77,7 @@ export default {
   methods: {
     foldGlobalToggle( ) {
       window.bus.$emit( 'fold-global', false );
-      console.log(this.value1)
+      //console.log(this.value1)
     },
     unfoldGlobalToggle( ) {
       window.bus.$emit( 'unfold-global', true );

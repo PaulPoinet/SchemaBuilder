@@ -17,19 +17,21 @@
       <span>&nbsp;</span>
       <span v-if="this.selectedInRhino == true">
       <v-icon class="makeSmall" small icon color="yellow">fa-cube</v-icon>
-      <v-avatar class="red" size="18px" >
+      
       <!--<span class="whiteFont">{{this.localIndex}}</span>-->
-       <span class="whiteFont">{{getIndices(model)[1]}}</span>
+      <!--<span class="whiteFont">{{getIndices(model)[1]}}</span>-->
+      <code class="selectedTag">{{getIndices(model)[1]}}</code>
       <!--<span class="whiteFont">{{this.indexRhinoObject}}</span>-->
-      </v-avatar>
+      
       </span>
       <span v-if="isFolder && model.children[0].Key == 'Id' && this.selectedInRhino == false">
       <v-icon class="makeSmall" small icon color="white">fa-cube</v-icon>
-      <v-avatar class="black" size="18px" >
+      
       <!--<span class="whiteFont">{{this.localIndex}}</span>-->
-      <span class="whiteFont">{{getIndices(model)[1]}}</span>
+      <!--<span class="whiteFont">{{getIndices(model)[1]}}</span>-->
+      <code class="unselectedTag">{{getIndices(model)[1]}}</code>
       <!--<span class="whiteFont">{{this.indexRhinoObject}}</span>-->
-      </v-avatar>
+      
       </span>
       <v-tooltip right>
         <v-icon style="cursor: pointer;" @click="show" hover xs1 small flat color="grey lighten-2" class="makeSmall" slot="activator">more_vert</v-icon>
@@ -112,7 +114,6 @@
         </v-menu>
       </div>
     </ul>
-    
   </li>
 </template>
 <script>
@@ -242,16 +243,16 @@ export default {
     },
 
     getIndices( obj ) {
-        window.bus.$on( 'objects-Ids', state => {
-          this.objectIdsGlobal = state
-          console.log(this.objectIdsGlobal, "from updated, global")
-        } )
+      window.bus.$on( 'objects-Ids', state => {
+        this.objectIdsGlobal = state
+        console.log( this.objectIdsGlobal, "from updated, global" )
+      } )
       for ( var i = 0; i < this.objectIdsGlobal.length; i++ ) {
         if ( this.objectIdsGlobal[ i ] === obj.children[ 0 ].Value ) {
           return [ true, i ];
         }
       }
-      return [false, "+"];
+      return [ false, "+" ];
     },
 
     contains( a, obj ) {
@@ -294,6 +295,8 @@ export default {
 
     addProperties( myModel ) {
       if ( !myModel.children ) {
+        myModel.Key = this.customName
+        myModel.Value = "myRhinoObject"
         this.$set( myModel, 'children', [ ] )
         myModel.children.push( { Key: 'Id', Value: this.myObjectId }, {
           Key: "RhinoProperties",
@@ -453,11 +456,10 @@ export default {
       console.log( this.GlobalEdges )
       console.log( this.GlobalSiblingEdges )
       Interop.showEdges( JSON.stringify( this.GlobalEdges ) )
+      //Interop.showSiblingEdges( JSON.stringify( this.GlobalSiblingEdges ) )
     },
 
     PlugMyObject( ) {
-      console.log( 'hey' )
-      console.log( this.guid, "found you MOTHERFUCKER" )
       window.bus.$emit( 'launch-props', [ true, this.model, this.guid ] )
       Interop.onClickProperties( )
     },
@@ -471,6 +473,13 @@ export default {
         } else {}
       }
     },
+
+
+    compileTreeToJSON( myModel ) {
+        var json_data = JSON.stringify(myModel);
+        console.log(json_data)
+        Interop.jSONToUD(json_data)
+    },
   },
 
   mounted( ) {
@@ -479,19 +488,20 @@ export default {
       if ( this.guid == state[ 0 ] ) { // makes sure it adds to the triggered model
         this.myObjectId = state[ 1 ]
         this.myProperties = state[ 2 ]
+        this.customName = state[3]
         this.addProperties( this.model )
         window.bus.$emit( 'collect-guids' )
         //this.vm.$once('hook:attached', () => window.bus.$emit( 'collect-guids' ))
 
 
       }
-    window.bus.$on( 'collect-guids', state => {
-      if ( this.model.Value == "SchemaBuilder" ) {
-       this.objectIds = [ ]
-        this.collectGUIDs( this.model )
-        window.bus.$emit( 'objects-Ids', this.objectIds )
-      }
-    } )
+      window.bus.$on( 'collect-guids', state => {
+        if ( this.model.Value == "SchemaBuilder" ) {
+          this.objectIds = [ ]
+          this.collectGUIDs( this.model )
+          window.bus.$emit( 'objects-Ids', this.objectIds )
+        }
+      } )
 
     } )
 
@@ -515,9 +525,10 @@ export default {
       this.showIndices = state
     } )
 
-    window.bus.$on( 'obj-name', state => {
-      this.customName = state
-    } )
+    //window.bus.$on( 'obj-name', state => {
+    //  this.$nextTick(this.customName = state)
+    //  console.log(state)
+    //} )
 
 
     window.bus.$on( 'show-global-objects', state => {
@@ -539,41 +550,33 @@ export default {
     } )
 
     window.bus.$on( 'my-selected-ids', state => {
-
-
-
       if ( !this.isFolder ) return
       if ( this.model.children[ 0 ].Key !== 'Id' ) return
-
-
-      //this.selectedInRhino = this.contains( JSON.parse( state ),  this.model.children[0].Value )
-
       if ( this.contains( JSON.parse( state ), this.model.children[ 0 ].Value ) ) {
         this.selectedInRhino = true
-
       } else {
         this.selectedInRhino = false
-
       }
-
-
-
-      //this.selectedIds = JSON.parse( state );
-
     } )
 
     window.bus.$on( 'deselection-all', state => {
-
-
       this.selectedInRhino = false
+    } )
+
+    window.bus.$on( 'compile-this', state => {
+      if ( state == true && this.model.Value == "SchemaBuilder" ) {       
+        this.compileTreeToJSON( this.model )
+      }
 
     } )
   },
 
-  updated( ) {
+  //updated( ) {
+  //  window.bus.$on( 'obj-name', state => {
+  //    this.$nextTick(this.customName = state)
+  //  } )
 
-
-  }
+  //}
 
 }
 </script>
@@ -581,7 +584,11 @@ export default {
 ul {
   margin: 0 2px;
 }
-
+code {
+  font-family: monospace;
+  color: white;
+  background-color: black;
+}
 .indexFont {
   color: black;
   font-family: Menlo, Consolas, monospace;
@@ -622,4 +629,17 @@ ul {
 .makeSmall {
   font-size: 20px;
 }
+
+.selectedTag{
+  font-family: monospace;
+  color: white;
+  background-color: red;
+}
+
+.unselectedTag{
+  font-family: monospace;
+  color: white;
+  background-color: black;
+}
+
 </style>
