@@ -371,6 +371,8 @@ namespace SchemaBuilder
                         if (pi.PropertyType == typeof(RhinoDoc))
                         {
                             objVal = RhinoDoc.ActiveDoc.Name;
+                            if(objVal == null)
+                                objVal = "Untitled";
                             if (string.IsNullOrEmpty(objVal.ToString()))
                                 objVal = "Untitled";
                             propertyDict.Add(pi.Name, objVal);

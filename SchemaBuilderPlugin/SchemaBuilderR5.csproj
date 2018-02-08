@@ -1,0 +1,164 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="packages\CefSharp.WinForms.57.0.0\build\CefSharp.WinForms.props" Condition="Exists('packages\CefSharp.WinForms.57.0.0\build\CefSharp.WinForms.props')" />
+  <Import Project="packages\CefSharp.Common.57.0.0\build\CefSharp.Common.props" Condition="Exists('packages\CefSharp.Common.57.0.0\build\CefSharp.Common.props')" />
+  <Import Project="..\packages\CefSharp.WinForms.49.0.1\build\CefSharp.WinForms.props" Condition="Exists('..\packages\CefSharp.WinForms.49.0.1\build\CefSharp.WinForms.props')" />
+  <Import Project="..\packages\CefSharp.Common.49.0.1\build\CefSharp.Common.props" Condition="Exists('..\packages\CefSharp.Common.49.0.1\build\CefSharp.Common.props')" />
+  <Import Project="packages\CefSharp.WinForms.47.0.3\build\CefSharp.WinForms.props" Condition="Exists('packages\CefSharp.WinForms.47.0.3\build\CefSharp.WinForms.props')" />
+  <Import Project="packages\CefSharp.Common.47.0.3\build\CefSharp.Common.props" Condition="Exists('packages\CefSharp.Common.47.0.3\build\CefSharp.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug32</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>8.0.30703</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{121C58CE-A403-472F-8B6E-F26DB8D504BC}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>SchemaBuilder</RootNamespace>
+    <AssemblyName>SchemaBuilderR5</AssemblyName>
+    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <IsWebBootstrapper>false</IsWebBootstrapper>
+    <NuGetPackageImportStamp>
+    </NuGetPackageImportStamp>
+    <TargetFrameworkProfile />
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x64' ">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\x64\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DebugType>full</DebugType>
+    <PlatformTarget>x64</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisIgnoreBuiltInRules>false</CodeAnalysisIgnoreBuiltInRules>
+    <CodeAnalysisFailOnMissingRules>true</CodeAnalysisFailOnMissingRules>
+    <Prefer32Bit>false</Prefer32Bit>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
+    <OutputPath>bin\x64\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>x64</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisIgnoreBuiltInRuleSets>false</CodeAnalysisIgnoreBuiltInRuleSets>
+    <CodeAnalysisIgnoreBuiltInRules>false</CodeAnalysisIgnoreBuiltInRules>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\x86\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DebugType>full</DebugType>
+    <PlatformTarget>x86</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisIgnoreBuiltInRuleSets>true</CodeAnalysisIgnoreBuiltInRuleSets>
+    <CodeAnalysisFailOnMissingRules>true</CodeAnalysisFailOnMissingRules>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
+    <OutputPath>bin\x86\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>x86</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisIgnoreBuiltInRuleSets>false</CodeAnalysisIgnoreBuiltInRuleSets>
+    <CodeAnalysisIgnoreBuiltInRules>false</CodeAnalysisIgnoreBuiltInRules>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Net" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\src\Interop.cs">
+      <Link>Interop.cs</Link>
+    </Compile>
+    <Compile Include="..\src\RhinoEventListeners.cs">
+      <Link>RhinoEventListeners.cs</Link>
+    </Compile>
+    <Compile Include="..\src\SchemaBuilderCommand.cs">
+      <Link>SchemaBuilderCommand.cs</Link>
+    </Compile>
+    <Compile Include="..\src\SchemaBuilderDisplay.cs">
+      <Link>SchemaBuilderDisplay.cs</Link>
+    </Compile>
+    <Compile Include="..\src\SchemaBuilderPanelControl.cs">
+      <Link>SchemaBuilderPanelControl.cs</Link>
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="..\src\SchemaBuilderPanelControl.designer.cs">
+      <Link>SchemaBuilderPanelControl.designer.cs</Link>
+      <DependentUpon>SchemaBuilderPanelControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="..\src\SchemaBuilderPlugIn.cs">
+      <Link>SchemaBuilderPlugIn.cs</Link>
+    </Compile>
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+    <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="..\src\SchemaBuilderPanelControl.resx">
+      <Link>SchemaBuilderPanelControl.resx</Link>
+      <DependentUpon>SchemaBuilderPanelControl.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="SchemaBuilder.ico" />
+  </ItemGroup>
+  <ItemGroup />
+  <ItemGroup>
+    <PackageReference Include="CefSharp.WinForms">
+      <Version>57.0.0</Version>
+    </PackageReference>
+    <PackageReference Include="Newtonsoft.Json">
+      <Version>10.0.3</Version>
+    </PackageReference>
+    <PackageReference Include="RhinoCommon">
+      <Version>5.12.50810.13095</Version>
+    </PackageReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\SchemaBuilder.ico" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>-->
+  <Target Name="AfterBuild">
+	<Delete Files="$(TargetDir)RhinoCommon.dll" />
+	<Copy SourceFiles="$(TargetPath)" DestinationFiles="$(TargetDir)\$(ProjectName).rhp" />
+	<Delete Files="$(TargetPath)" />
+  </Target>
+  
+  <PropertyGroup>
+    <FallbackCulture>en-US</FallbackCulture>
+  </PropertyGroup>
+  <Import Project="packages\cef.redist.x64.3.2526.1362\build\cef.redist.x64.targets" Condition="Exists('packages\cef.redist.x64.3.2526.1362\build\cef.redist.x64.targets')" />
+  <Import Project="packages\cef.redist.x86.3.2526.1362\build\cef.redist.x86.targets" Condition="Exists('packages\cef.redist.x86.3.2526.1362\build\cef.redist.x86.targets')" />
+  <Import Project="packages\CefSharp.Common.47.0.3\build\CefSharp.Common.targets" Condition="Exists('packages\CefSharp.Common.47.0.3\build\CefSharp.Common.targets')" />
+  <Import Project="..\packages\cef.redist.x64.3.2623.1401\build\cef.redist.x64.targets" Condition="Exists('..\packages\cef.redist.x64.3.2623.1401\build\cef.redist.x64.targets')" />
+  <Import Project="..\packages\cef.redist.x86.3.2623.1401\build\cef.redist.x86.targets" Condition="Exists('..\packages\cef.redist.x86.3.2623.1401\build\cef.redist.x86.targets')" />
+  <Import Project="..\packages\CefSharp.Common.49.0.1\build\CefSharp.Common.targets" Condition="Exists('..\packages\CefSharp.Common.49.0.1\build\CefSharp.Common.targets')" />
+  <Import Project="packages\cef.redist.x64.3.2987.1601\build\cef.redist.x64.targets" Condition="Exists('packages\cef.redist.x64.3.2987.1601\build\cef.redist.x64.targets')" />
+  <Import Project="packages\cef.redist.x86.3.2987.1601\build\cef.redist.x86.targets" Condition="Exists('packages\cef.redist.x86.3.2987.1601\build\cef.redist.x86.targets')" />
+  <Import Project="packages\CefSharp.Common.57.0.0\build\CefSharp.Common.targets" Condition="Exists('packages\CefSharp.Common.57.0.0\build\CefSharp.Common.targets')" />
+  <Import Project="packages\CefSharp.WinForms.57.0.0\build\CefSharp.WinForms.targets" Condition="Exists('packages\CefSharp.WinForms.57.0.0\build\CefSharp.WinForms.targets')" />
+</Project>
