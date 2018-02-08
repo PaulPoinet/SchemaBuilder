@@ -81,8 +81,12 @@ namespace SchemaBuilder
 
             if (Cef.IsInitialized)
             {
-
-                m_browser = new ChromiumWebBrowser("http://localhost:9090/")
+#if DEBUG
+                var index = "http://localhost:9090/";
+#else
+                var index = "path to index.html";
+#endif
+                m_browser = new ChromiumWebBrowser(index)
                 {
                     BrowserSettings = new BrowserSettings
                     {
@@ -92,6 +96,7 @@ namespace SchemaBuilder
 
                     Dock = DockStyle.Fill
                 };
+
 
                 m_browser.RegisterAsyncJsObject("Interop", new Interop(m_browser));
             }
