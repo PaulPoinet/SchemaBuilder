@@ -82,15 +82,16 @@ namespace SchemaBuilder
             if (Cef.IsInitialized)
             {
 
-                m_browser = new ChromiumWebBrowser("http://localhost:9090/");
-               
-                m_browser.BrowserSettings = new BrowserSettings
+                m_browser = new ChromiumWebBrowser("http://localhost:9090/")
                 {
-                    FileAccessFromFileUrls = CefState.Enabled,
-                    UniversalAccessFromFileUrls = CefState.Enabled
+                    BrowserSettings = new BrowserSettings
+                    {
+                        FileAccessFromFileUrls = CefState.Enabled,
+                        UniversalAccessFromFileUrls = CefState.Enabled
+                    },
+
+                    Dock = DockStyle.Fill
                 };
-                
-                m_browser.Dock = DockStyle.Fill;
 
                 m_browser.RegisterAsyncJsObject("Interop", new Interop(m_browser));
             }
