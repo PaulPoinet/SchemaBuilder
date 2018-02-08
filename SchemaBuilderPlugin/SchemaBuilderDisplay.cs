@@ -26,7 +26,8 @@ namespace SchemaBuilder
         {
             base.PreDrawObjects(e);
 
-
+            Rhino.Display.RhinoView myViewport = Rhino.RhinoDoc.ActiveDoc.Views.ActiveView;
+            Rhino.Display.RhinoViewport viewport = myViewport.ActiveViewport;
 
 
             for (int i = 0; i < Ids.Count; i++)
@@ -39,6 +40,50 @@ namespace SchemaBuilder
                 e.Display.DrawBoxCorners(bbox, System.Drawing.Color.DarkGray, 3, 2);
                 e.Display.EnableDepthWriting(true);
 
+                switch (foundObject.ObjectType)
+                {
+
+                    case Rhino.DocObjects.ObjectType.Point:
+                        break;
+
+                    case Rhino.DocObjects.ObjectType.Curve:
+                        break;
+
+                    case Rhino.DocObjects.ObjectType.Extrusion:
+                        Rhino.Geometry.Extrusion myExtru = (Rhino.Geometry.Extrusion)foundObject.Geometry;
+                        Rhino.Geometry.Brep myBrep = myExtru.ToBrep();
+                        Mesh[] extruMeshes = Rhino.Geometry.Mesh.CreateFromBrep(myBrep);
+                        Mesh globalExtruMesh = new Rhino.Geometry.Mesh();
+                        foreach (Mesh m in extruMeshes)
+                            globalExtruMesh.Append(m);
+                        Polyline[] myExtruPoly = globalExtruMesh.GetOutlines(viewport);
+                        foreach (Polyline poly in myExtruPoly)
+                            e.Display.DrawCurve(poly.ToNurbsCurve(), Color.Black, 6);
+                        break;
+
+                    case Rhino.DocObjects.ObjectType.Brep:
+                        Mesh[] meshes = Rhino.Geometry.Mesh.CreateFromBrep((Brep)foundObject.Geometry);
+                        Mesh globalMesh = new Rhino.Geometry.Mesh();
+                        foreach (Mesh m in meshes)
+                            globalMesh.Append(m);
+                        Polyline[] myPolys2 = globalMesh.GetOutlines(viewport);
+                        foreach (Polyline poly in myPolys2)
+                            e.Display.DrawCurve(poly.ToNurbsCurve(), Color.Black, 6);
+                        break;
+
+                    case Rhino.DocObjects.ObjectType.Mesh:
+                        Mesh mesh = foundObject.Geometry as Rhino.Geometry.Mesh;
+                        Polyline[] meshOutline = mesh.GetOutlines(viewport);
+                        foreach (Polyline poly in meshOutline)
+                            e.Display.DrawCurve(poly.ToNurbsCurve(), Color.Black, 6);
+                        break;
+
+                    case Rhino.DocObjects.ObjectType.TextDot:
+                        break;
+
+                    case Rhino.DocObjects.ObjectType.Annotation:
+                        break;
+                }
 
             }
             
@@ -281,9 +326,9 @@ namespace SchemaBuilder
             Rhino.RhinoDoc.ActiveDoc.Views.Redraw();
 
         }
-        protected override void PostDrawObjects(DrawEventArgs e)
+        protected override void DrawForeground(DrawEventArgs e)
         {
-            base.PostDrawObjects(e);
+            base.DrawForeground(e);
             //e.Display.DrawDot(bbox.Center, Id.ToString());
 
 
