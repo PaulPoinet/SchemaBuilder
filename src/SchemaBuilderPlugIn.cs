@@ -84,7 +84,14 @@ namespace SchemaBuilder
 #if DEBUG
                 var index = "http://localhost:9090/";
 #else
-                var index = "path to index.html";
+                var path = Directory.GetParent(Assembly.GetExecutingAssembly().Location);
+
+                var index = string.Format(@"{0}\app\index.html", path);
+
+                if (!File.Exists(index))
+                    Debug.WriteLine("Error. The html file doesn't exists : {0}", "SchemaBuilder");
+
+                index = index.Replace("\\", "/");
 #endif
                 m_browser = new ChromiumWebBrowser(index)
                 {
