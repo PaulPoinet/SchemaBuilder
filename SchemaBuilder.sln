@@ -5,7 +5,7 @@ VisualStudioVersion = 15.0.27130.2020
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9092AA53-FB77-4645-B42D-1CCCA6BD08BD}") = "Vue", "Vue\Vue.njsproj", "{B4D5F9C8-43CA-497F-9308-63343AE8519D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SchemaBuilderR5", "SchemaBuilderPlugin\SchemaBuilderR5.csproj", "{121C58CE-A403-472F-8B6E-F26DB8D504BC}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SchemaBuilderR5", "SchemaBuilderR5\SchemaBuilderR5.csproj", "{121C58CE-A403-472F-8B6E-F26DB8D504BC}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SchemaBuilderR6", "SchemaBuilderR6\SchemaBuilderR6.csproj", "{7F415B17-C3A9-449E-938E-18678B00806B}"
 EndProject
