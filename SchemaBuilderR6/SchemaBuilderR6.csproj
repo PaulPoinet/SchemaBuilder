@@ -144,6 +144,11 @@
     <MakeDir Condition="$(Configuration) == 'Release'" Directories="$(TargetDir)\app\dist" />
     <Copy Condition="$(Configuration) == 'Release'" SourceFiles="$(SolutionDir)\Vue\index.html" DestinationFolder="$(TargetDir)\app" />
     <Copy Condition="$(Configuration) == 'Release'" SourceFiles="$(SolutionDir)\Vue\dist\build.js" DestinationFolder="$(TargetDir)\app\dist" />
+	<Copy Condition="$(Configuration) == 'Release'" SourceFiles="$(SolutionDir)\Vue\dist\build.js.map" DestinationFolder="$(TargetDir)\app\dist" />
+	<Copy Condition="$(Configuration) == 'Release'" SourceFiles="$(SolutionDir)\Vue\dist\style.css" DestinationFolder="$(TargetDir)\app\dist" />
+	<Copy Condition="$(Configuration) == 'Release'" SourceFiles="$(SolutionDir)\Vue\dist\style.css.map" DestinationFolder="$(TargetDir)\app\dist" />
+	<Copy Condition="$(Configuration) == 'Release'" SourceFiles="$(SolutionDir)\Vue\dist\vuetify.min.css" DestinationFolder="$(TargetDir)\app\dist" />
+	<Copy Condition="$(Configuration) == 'Release'" SourceFiles="$(SolutionDir)\Vue\dist\vuetify.min.css.map" DestinationFolder="$(TargetDir)\app\dist" />
   </Target>
   <Target Name="AfterBuild">
     <Delete Files="$(TargetDir)Eto.dll" />
