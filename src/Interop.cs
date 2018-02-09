@@ -9,6 +9,8 @@ using System.Text;
 using System.Windows.Forms;
 using Newtonsoft.Json;
 using System.Dynamic;
+using Rhino.Geometry;
+using Rhino;
 
 namespace SchemaBuilder
 {
@@ -36,6 +38,7 @@ namespace SchemaBuilder
 
         public SchemaBuilderDisplayEdges myDisplayEdges { get; set; }
         public bool? myDisplayEdgesBool = null;
+
 
         //public Rhino.Geometry.BoundingBox myGlobalBbox { get; set; }
 
@@ -86,9 +89,8 @@ namespace SchemaBuilder
             
             List<Guid> myListGUIDs = JsonConvert.DeserializeObject<List<Guid>>(myGUIDs);
             allGuids = myListGUIDs;
-
-            //RhinoApp.WriteLine(myListGUIDs[0].ToString());
             myDisplay.Ids = myListGUIDs;
+
             myDisplay.Enabled = true;
             Rhino.RhinoDoc.ActiveDoc.Views.Redraw();
         }
@@ -161,10 +163,25 @@ namespace SchemaBuilder
             myDisplayEdgesBool = true;
             myDisplayEdges = new SchemaBuilderDisplayEdges();
             List<List<Guid>> tupGUIDs = JsonConvert.DeserializeObject<List<List<Guid>>>(myEdges);
-
+            
+            
             //RhinoApp.WriteLine(myListGUIDs[0].ToString());
             myDisplayEdges.Edges = tupGUIDs;
             myDisplayEdges.Enabled = true;
+            Rhino.RhinoDoc.ActiveDoc.Views.Redraw();
+        }
+
+        public SchemaBuilderDisplaySiblingEdges myDisplaySiblingEdges { get; set; }
+        public bool? myDisplaySiblingEdgesBool = null;
+        public void ShowSiblingEdges(string mySiblingEdges)
+        {
+            myDisplaySiblingEdgesBool = true;
+            myDisplaySiblingEdges = new SchemaBuilderDisplaySiblingEdges();
+            List<List<Guid>> tupGUIDs = JsonConvert.DeserializeObject<List<List<Guid>>>(mySiblingEdges);
+
+            //RhinoApp.WriteLine(myListGUIDs[0].ToString());
+            myDisplaySiblingEdges.Edges = tupGUIDs;
+            myDisplaySiblingEdges.Enabled = true;
             Rhino.RhinoDoc.ActiveDoc.Views.Redraw();
         }
 
