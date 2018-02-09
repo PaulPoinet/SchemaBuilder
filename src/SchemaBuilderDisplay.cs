@@ -14,7 +14,11 @@ namespace SchemaBuilder
     public class SchemaBuilderDisplay : Rhino.Display.DisplayConduit
     {
         public List<Guid> Ids = new List<Guid>();
-        public System.Drawing.Color myCol = System.Drawing.Color.Blue;
+        public System.Drawing.Color myCol = System.Drawing.Color.Red;
+        //public List<Point3d> locations = new List<Point3d>();
+
+
+
 
         protected override void CalculateBoundingBox(Rhino.Display.CalculateBoundingBoxEventArgs e)
         {
@@ -24,11 +28,14 @@ namespace SchemaBuilder
 
         protected override void PreDrawObjects(Rhino.Display.DrawEventArgs e)
         {
+
+
+
+
+
+
             base.PreDrawObjects(e);
-
-            Rhino.Display.RhinoView myViewport = Rhino.RhinoDoc.ActiveDoc.Views.ActiveView;
-            Rhino.Display.RhinoViewport viewport = myViewport.ActiveViewport;
-
+            
 
             for (int i = 0; i < Ids.Count; i++)
             {
@@ -46,7 +53,7 @@ namespace SchemaBuilder
                         break;
 
                     case Rhino.DocObjects.ObjectType.Curve:
-                        e.Display.DrawCurve((Rhino.Geometry.Curve)foundObject.Geometry, myCol, 5);
+                        e.Display.DrawCurve((Rhino.Geometry.Curve)foundObject.Geometry, myCol, 3);
                         break;
 
                     case Rhino.DocObjects.ObjectType.Extrusion:
@@ -65,7 +72,6 @@ namespace SchemaBuilder
                         {
                             for (int j = 0; j < mesh.VertexColors.Count; j++)
                                 mesh.VertexColors[j] = Color.FromArgb(100, mesh.VertexColors[j]);
-
                             e.Display.DrawMeshFalseColors(mesh);
                         }
                         else
@@ -102,47 +108,58 @@ namespace SchemaBuilder
 
             List<Guid> noDupGUIDs = new List<Guid>();
             
+
             for (int i = 0; i < Ids.Count; i++)
             {
-                if (noDupGUIDs.Contains(Ids[i]))
-                {
-
-                }
+                if (noDupGUIDs.Contains(Ids[i])){}
                 else
                 {
                     noDupGUIDs.Add(Ids[i]);
-
-                    //RhinoApp.WriteLine(i.ToString());
                     RhinoObject foundObject = Rhino.RhinoDoc.ActiveDoc.Objects.Find(Ids[i]);
                     int isSelected = foundObject.IsSelected(false);
-                    Rhino.Geometry.BoundingBox bbox = foundObject.Geometry.GetBoundingBox(true);
-                    bbox.Inflate(2);
-                    //e.Display.DrawDot(bbox.c, i.ToString(), System.Drawing.Color.Black, System.Drawing.Color.White);
+
                     switch (foundObject.ObjectType)
                     {
                         case Rhino.DocObjects.ObjectType.Point:
-                            e.Display.DrawDot(((Rhino.Geometry.Point)foundObject.Geometry).Location, i.ToString(), System.Drawing.Color.Red, System.Drawing.Color.White);
+                            if (isSelected > 0)
+                                e.Display.DrawDot(((Rhino.Geometry.Point)foundObject.Geometry).Location, i.ToString(), System.Drawing.Color.Red, System.Drawing.Color.White);
+                            else
+                                e.Display.DrawDot(((Rhino.Geometry.Point)foundObject.Geometry).Location, i.ToString(), System.Drawing.Color.Black, System.Drawing.Color.White);
                             break;
                         case Rhino.DocObjects.ObjectType.Curve:
-                            e.Display.DrawCurve((Rhino.Geometry.Curve)foundObject.Geometry, myCol, 5);
                             Rhino.Geometry.Curve myCurve = (Rhino.Geometry.Curve)foundObject.Geometry;
                             myCurve.Domain = new Rhino.Geometry.Interval(0, 1);
-                            e.Display.DrawDot(((Rhino.Geometry.Curve)foundObject.Geometry).PointAtNormalizedLength(0.5), i.ToString(), System.Drawing.Color.Red, System.Drawing.Color.White);
+                            if (isSelected > 0)
+                                e.Display.DrawDot(myCurve.PointAtNormalizedLength(0.5), i.ToString(), System.Drawing.Color.Red, System.Drawing.Color.White);
+                            else
+                                e.Display.DrawDot(myCurve.PointAtNormalizedLength(0.5), i.ToString(), System.Drawing.Color.Black, System.Drawing.Color.White);
                             break;
-
                         case Rhino.DocObjects.ObjectType.Extrusion:
                             Rhino.Geometry.Extrusion myExtru = (Rhino.Geometry.Extrusion)foundObject.Geometry;
-                            e.Display.DrawDot(Rhino.Geometry.AreaMassProperties.Compute(myExtru.ToBrep()).Centroid, i.ToString(), System.Drawing.Color.Red, System.Drawing.Color.White);
+                            Rhino.Geometry.Point3d myExtruLocation = myExtru.GetBoundingBox(true).Center;
+                            //Rhino.Geometry.Point3d myExtruCentroid = Rhino.Geometry.AreaMassProperties.Compute(myExtru.ToBrep()).Centroid;
+                            if (isSelected > 0)
+                                e.Display.DrawDot(myExtruLocation, i.ToString(), System.Drawing.Color.Red, System.Drawing.Color.White);
+                            else
+                                e.Display.DrawDot(myExtruLocation, i.ToString(), System.Drawing.Color.Black, System.Drawing.Color.White);
                             break;
 
                         case Rhino.DocObjects.ObjectType.Brep:
-                            DisplayMaterial bMaterial = new DisplayMaterial(myCol, 0.5);
-                            e.Display.DrawDot(Rhino.Geometry.AreaMassProperties.Compute((Brep)foundObject.Geometry).Centroid, i.ToString(), System.Drawing.Color.Red, System.Drawing.Color.White);
+                            Rhino.Geometry.Brep myBrep = (Rhino.Geometry.Brep)foundObject.Geometry;
+                            Rhino.Geometry.Point3d myBrepLocation = myBrep.GetBoundingBox(true).Center;
+                            if (isSelected > 0)
+                                e.Display.DrawDot(myBrepLocation, i.ToString(), System.Drawing.Color.Red, System.Drawing.Color.White);
+                            else
+                                e.Display.DrawDot(myBrepLocation, i.ToString(), System.Drawing.Color.Black, System.Drawing.Color.White);
                             break;
 
                         case Rhino.DocObjects.ObjectType.Mesh:
                             var mesh = foundObject.Geometry as Rhino.Geometry.Mesh;
-                            e.Display.DrawDot(Rhino.Geometry.AreaMassProperties.Compute(mesh).Centroid, i.ToString(), System.Drawing.Color.Red, System.Drawing.Color.White);
+                            Rhino.Geometry.Point3d myMeshLocation = mesh.GetBoundingBox(true).Center;
+                            if (isSelected > 0)
+                                e.Display.DrawDot(myMeshLocation, i.ToString(), System.Drawing.Color.Red, System.Drawing.Color.White);
+                            else
+                                e.Display.DrawDot(myMeshLocation, i.ToString(), System.Drawing.Color.Black, System.Drawing.Color.White);
                             break;
 
                         case Rhino.DocObjects.ObjectType.TextDot:
@@ -152,50 +169,6 @@ namespace SchemaBuilder
                         case Rhino.DocObjects.ObjectType.Annotation:
                             var textObj = (Rhino.Geometry.TextEntity)foundObject.Geometry;
                             break;
-                    }
-                    if (isSelected > 0)
-                    {
-                        switch (foundObject.ObjectType)
-                        {
-                            case Rhino.DocObjects.ObjectType.Point:
-                                e.Display.DrawDot(((Rhino.Geometry.Point)foundObject.Geometry).Location, i.ToString(), System.Drawing.Color.Red, System.Drawing.Color.White);
-                                break;
-                            case Rhino.DocObjects.ObjectType.Curve:
-                                e.Display.DrawCurve((Rhino.Geometry.Curve)foundObject.Geometry, myCol, 5);
-                                Rhino.Geometry.Curve myCurve = (Rhino.Geometry.Curve)foundObject.Geometry;
-                                myCurve.Domain = new Rhino.Geometry.Interval(0, 1);
-                                e.Display.DrawDot(((Rhino.Geometry.Curve)foundObject.Geometry).PointAtNormalizedLength(0.5), i.ToString(), System.Drawing.Color.Red, System.Drawing.Color.White);
-                                break;
-
-                            case Rhino.DocObjects.ObjectType.Extrusion:
-                                Rhino.Geometry.Extrusion myExtru = (Rhino.Geometry.Extrusion)foundObject.Geometry;
-                                e.Display.DrawDot(Rhino.Geometry.AreaMassProperties.Compute(myExtru.ToBrep()).Centroid, i.ToString(), System.Drawing.Color.Red, System.Drawing.Color.White);
-                                break;
-
-                            case Rhino.DocObjects.ObjectType.Brep:
-                                DisplayMaterial bMaterial = new DisplayMaterial(myCol, 0.5);
-                                e.Display.DrawDot(Rhino.Geometry.AreaMassProperties.Compute((Brep)foundObject.Geometry).Centroid, i.ToString(), System.Drawing.Color.Red, System.Drawing.Color.White);
-                                break;
-
-                            case Rhino.DocObjects.ObjectType.Mesh:
-                                var mesh = foundObject.Geometry as Rhino.Geometry.Mesh;
-                                e.Display.DrawDot(Rhino.Geometry.AreaMassProperties.Compute(mesh).Centroid, i.ToString(), System.Drawing.Color.Red, System.Drawing.Color.White);
-                                break;
-
-                            case Rhino.DocObjects.ObjectType.TextDot:
-                                var textDot = (TextDot)foundObject.Geometry;
-                                break;
-
-                            case Rhino.DocObjects.ObjectType.Annotation:
-                                var textObj = (Rhino.Geometry.TextEntity)foundObject.Geometry;
-                                break;
-                        }
-                        e.Display.DrawDot(bbox.Center, i.ToString(), System.Drawing.Color.Red, System.Drawing.Color.White);
-                    }
-                    else
-                    {
-                        //e.Display.DrawDot(bbox.GetCorners()[7], i.ToString(), System.Drawing.Color.Black, System.Drawing.Color.White);
-                        e.Display.DrawDot(bbox.Center, i.ToString(), System.Drawing.Color.Black, System.Drawing.Color.White);
                     }
                 }
                 
@@ -228,8 +201,86 @@ namespace SchemaBuilder
                 {
                     RhinoObject foundObject0 = Rhino.RhinoDoc.ActiveDoc.Objects.Find(li[0]);
                     RhinoObject foundObject1 = Rhino.RhinoDoc.ActiveDoc.Objects.Find(li[1]);
-                    Rhino.Geometry.Point3d ce0 = foundObject0.Geometry.GetBoundingBox(true).Center;
-                    Rhino.Geometry.Point3d ce1 = foundObject1.Geometry.GetBoundingBox(true).Center;
+                    Rhino.Geometry.Point3d ce0 = new Rhino.Geometry.Point3d();
+                    Rhino.Geometry.Point3d ce1 = new Rhino.Geometry.Point3d();
+
+                    switch (foundObject0.ObjectType)
+                    {
+                        case Rhino.DocObjects.ObjectType.Point:
+                            ce0 = ((Rhino.Geometry.Point)foundObject0.Geometry).Location;
+                            break;
+
+                        case Rhino.DocObjects.ObjectType.Curve:
+                            Rhino.Geometry.Curve myCurve = (Rhino.Geometry.Curve)foundObject0.Geometry;
+                            myCurve.Domain = new Rhino.Geometry.Interval(0, 1);
+                            ce0 = myCurve.PointAtNormalizedLength(0.5);
+                            break;
+
+                        case Rhino.DocObjects.ObjectType.Extrusion:
+                            Rhino.Geometry.Extrusion myExtru = (Rhino.Geometry.Extrusion)foundObject0.Geometry;
+                            Rhino.Geometry.Point3d myExtruCentroid = Rhino.Geometry.AreaMassProperties.Compute(myExtru.ToBrep()).Centroid;
+                            ce0 = myExtruCentroid;
+                            break;
+
+                        case Rhino.DocObjects.ObjectType.Brep:
+                            Rhino.Geometry.Point3d myBrepCentroid = ((Brep)foundObject0.Geometry).GetBoundingBox(true).Center;
+                            ce0 = myBrepCentroid;
+                            break;
+
+                        case Rhino.DocObjects.ObjectType.Mesh:
+                            var mesh = foundObject0.Geometry as Rhino.Geometry.Mesh;
+                            Rhino.Geometry.Point3d myMeshCentroid = mesh.GetBoundingBox(true).Center;
+                            ce0 = myMeshCentroid;
+                            break;
+
+                        case Rhino.DocObjects.ObjectType.TextDot:
+                            // todo
+                            break;
+
+                        case Rhino.DocObjects.ObjectType.Annotation:
+                            // todo
+                            break;
+                    }
+
+                    switch (foundObject1.ObjectType)
+                    {
+                        case Rhino.DocObjects.ObjectType.Point:
+                            ce1 = ((Rhino.Geometry.Point)foundObject1.Geometry).Location;
+                            break;
+
+                        case Rhino.DocObjects.ObjectType.Curve:
+                            Rhino.Geometry.Curve myCurve = (Rhino.Geometry.Curve)foundObject1.Geometry;
+                            myCurve.Domain = new Rhino.Geometry.Interval(0, 1);
+                            ce1 = myCurve.PointAtNormalizedLength(0.5);
+                            break;
+
+                        case Rhino.DocObjects.ObjectType.Extrusion:
+                            Rhino.Geometry.Extrusion myExtru = (Rhino.Geometry.Extrusion)foundObject1.Geometry;
+                            Rhino.Geometry.Point3d myExtruCentroid = Rhino.Geometry.AreaMassProperties.Compute(myExtru.ToBrep()).Centroid;
+                            ce1 = myExtruCentroid;
+                            break;
+
+                        case Rhino.DocObjects.ObjectType.Brep:
+                            Rhino.Geometry.Point3d myBrepCentroid = ((Brep)foundObject1.Geometry).GetBoundingBox(true).Center;
+                            ce1 = myBrepCentroid;
+                            break;
+
+                        case Rhino.DocObjects.ObjectType.Mesh:
+                            var mesh = foundObject1.Geometry as Rhino.Geometry.Mesh;
+                            Rhino.Geometry.Point3d myMeshCentroid = mesh.GetBoundingBox(true).Center;
+                            ce1 = myMeshCentroid;
+                            break;
+
+                        case Rhino.DocObjects.ObjectType.TextDot:
+                            // todo
+                            break;
+
+                        case Rhino.DocObjects.ObjectType.Annotation:
+                            // todo
+                            break;
+                    }
+
+
                     Rhino.Geometry.Line graphEdge = new Rhino.Geometry.Line();
                     graphEdge.From = ce0;
                     graphEdge.To = ce1;
@@ -244,6 +295,119 @@ namespace SchemaBuilder
         
     }
 
+    public class SchemaBuilderDisplaySiblingEdges : Rhino.Display.DisplayConduit
+    {
+        public List<List<Guid>> Edges = new List<List<Guid>>();
+
+        protected override void CalculateBoundingBox(Rhino.Display.CalculateBoundingBoxEventArgs e)
+        {
+            base.CalculateBoundingBox(e);
+            //e.IncludeBoundingBox(new Rhino.Geometry.Point3d(0, 0, 0));
+        }
+        protected override void DrawForeground(DrawEventArgs e)
+        {
+            base.DrawForeground(e);
+            if (Edges.Count > 0)
+            {
+                System.Drawing.Color colorKid = System.Drawing.Color.LightCoral;
+                foreach (List<Guid> li in Edges)
+
+                {
+                    RhinoObject foundObject0 = Rhino.RhinoDoc.ActiveDoc.Objects.Find(li[0]);
+                    RhinoObject foundObject1 = Rhino.RhinoDoc.ActiveDoc.Objects.Find(li[1]);
+                    Rhino.Geometry.Point3d ce0 = new Rhino.Geometry.Point3d();
+                    Rhino.Geometry.Point3d ce1 = new Rhino.Geometry.Point3d();
+
+                    switch (foundObject0.ObjectType)
+                    {
+                        case Rhino.DocObjects.ObjectType.Point:
+                            ce0 = ((Rhino.Geometry.Point)foundObject0.Geometry).Location;
+                            break;
+
+                        case Rhino.DocObjects.ObjectType.Curve:
+                            Rhino.Geometry.Curve myCurve = (Rhino.Geometry.Curve)foundObject0.Geometry;
+                            myCurve.Domain = new Rhino.Geometry.Interval(0, 1);
+                            ce0 = myCurve.PointAtNormalizedLength(0.5);
+                            break;
+
+                        case Rhino.DocObjects.ObjectType.Extrusion:
+                            Rhino.Geometry.Extrusion myExtru = (Rhino.Geometry.Extrusion)foundObject0.Geometry;
+                            Rhino.Geometry.Point3d myExtruCentroid = Rhino.Geometry.AreaMassProperties.Compute(myExtru.ToBrep()).Centroid;
+                            ce0 = myExtruCentroid;
+                            break;
+
+                        case Rhino.DocObjects.ObjectType.Brep:
+                            Rhino.Geometry.Point3d myBrepCentroid = ((Brep)foundObject0.Geometry).GetBoundingBox(true).Center;
+                            ce0 = myBrepCentroid;
+                            break;
+
+                        case Rhino.DocObjects.ObjectType.Mesh:
+                            var mesh = foundObject0.Geometry as Rhino.Geometry.Mesh;
+                            Rhino.Geometry.Point3d myMeshCentroid = mesh.GetBoundingBox(true).Center;
+                            ce0 = myMeshCentroid;
+                            break;
+
+                        case Rhino.DocObjects.ObjectType.TextDot:
+                            // todo
+                            break;
+
+                        case Rhino.DocObjects.ObjectType.Annotation:
+                            // todo
+                            break;
+                    }
+
+                    switch (foundObject1.ObjectType)
+                    {
+                        case Rhino.DocObjects.ObjectType.Point:
+                            ce1 = ((Rhino.Geometry.Point)foundObject1.Geometry).Location;
+                            break;
+
+                        case Rhino.DocObjects.ObjectType.Curve:
+                            Rhino.Geometry.Curve myCurve = (Rhino.Geometry.Curve)foundObject1.Geometry;
+                            myCurve.Domain = new Rhino.Geometry.Interval(0, 1);
+                            ce1 = myCurve.PointAtNormalizedLength(0.5);
+                            break;
+
+                        case Rhino.DocObjects.ObjectType.Extrusion:
+                            Rhino.Geometry.Extrusion myExtru = (Rhino.Geometry.Extrusion)foundObject1.Geometry;
+                            Rhino.Geometry.Point3d myExtruCentroid = Rhino.Geometry.AreaMassProperties.Compute(myExtru.ToBrep()).Centroid;
+                            ce1 = myExtruCentroid;
+                            break;
+
+                        case Rhino.DocObjects.ObjectType.Brep:
+                            Rhino.Geometry.Point3d myBrepCentroid = ((Brep)foundObject1.Geometry).GetBoundingBox(true).Center;
+                            ce1 = myBrepCentroid;
+                            break;
+
+                        case Rhino.DocObjects.ObjectType.Mesh:
+                            var mesh = foundObject1.Geometry as Rhino.Geometry.Mesh;
+                            Rhino.Geometry.Point3d myMeshCentroid = mesh.GetBoundingBox(true).Center;
+                            ce1 = myMeshCentroid;
+                            break;
+
+                        case Rhino.DocObjects.ObjectType.TextDot:
+                            // todo
+                            break;
+
+                        case Rhino.DocObjects.ObjectType.Annotation:
+                            // todo
+                            break;
+                    }
+
+
+                    Rhino.Geometry.Line graphEdge = new Rhino.Geometry.Line();
+                    graphEdge.From = ce0;
+                    graphEdge.To = ce1;
+                    e.Display.DrawLine(graphEdge, Color.Orange, 4);
+                }
+
+            }
+
+            Rhino.RhinoDoc.ActiveDoc.Views.Redraw();
+
+        }
+
+    }
     public class SchemaBuilderDisplayGraphOnHover : Rhino.Display.DisplayConduit
     {
         public List<List<Guid>> Edges = new List<List<Guid>>();
@@ -358,7 +522,6 @@ namespace SchemaBuilder
         protected override void DrawForeground(DrawEventArgs e)
         {
             base.DrawForeground(e);
-            //e.Display.DrawDot(bbox.Center, Id.ToString());
 
 
 
@@ -422,8 +585,144 @@ namespace SchemaBuilder
                 {
                     RhinoObject foundObject0 = Rhino.RhinoDoc.ActiveDoc.Objects.Find(li[0]);
                     RhinoObject foundObject1 = Rhino.RhinoDoc.ActiveDoc.Objects.Find(li[1]);
-                    Rhino.Geometry.Point3d ce0 = foundObject0.Geometry.GetBoundingBox(true).Center;
-                    Rhino.Geometry.Point3d ce1 = foundObject1.Geometry.GetBoundingBox(true).Center;
+                    Rhino.Geometry.Point3d ce0 = new Rhino.Geometry.Point3d();
+                    Rhino.Geometry.Point3d ce1 = new Rhino.Geometry.Point3d();
+
+                    switch (foundObject0.ObjectType)
+                    {
+                        case Rhino.DocObjects.ObjectType.Point:
+                            ce0 = ((Rhino.Geometry.Point)foundObject0.Geometry).Location;
+                            break;
+
+                        case Rhino.DocObjects.ObjectType.Curve:
+                            Rhino.Geometry.Curve myCurve = (Rhino.Geometry.Curve)foundObject0.Geometry;
+                            myCurve.Domain = new Rhino.Geometry.Interval(0, 1);
+                            ce0 = myCurve.PointAtNormalizedLength(0.5);
+                            break;
+
+                        case Rhino.DocObjects.ObjectType.Extrusion:
+                            Rhino.Geometry.Extrusion myExtru = (Rhino.Geometry.Extrusion)foundObject0.Geometry;
+                            Rhino.Geometry.Point3d myExtruCentroid = Rhino.Geometry.AreaMassProperties.Compute(myExtru.ToBrep()).Centroid;
+                            ce0 = myExtruCentroid;
+
+                            Rhino.Geometry.Brep myBrep = myExtru.ToBrep();
+                            Mesh[] extruMeshes = Rhino.Geometry.Mesh.CreateFromBrep(myBrep);
+                            Mesh globalExtruMesh = new Rhino.Geometry.Mesh();
+                            foreach (Mesh m in extruMeshes)
+                                globalExtruMesh.Append(m);
+                            Polyline[] myExtruPoly = globalExtruMesh.GetOutlines(viewport);
+                            foreach (Polyline poly in myExtruPoly)
+                                e.Display.DrawCurve(poly.ToNurbsCurve(), Color.Red, 6);
+
+                            break;
+
+                        case Rhino.DocObjects.ObjectType.Brep:
+                            Rhino.Geometry.Point3d myBrepCentroid = ((Brep)foundObject0.Geometry).GetBoundingBox(true).Center;
+                            ce0 = myBrepCentroid;
+
+                            Mesh[] meshes = Rhino.Geometry.Mesh.CreateFromBrep((Brep)foundObject0.Geometry);
+                            Mesh globalMesh = new Rhino.Geometry.Mesh();
+                            foreach (Mesh m in meshes)
+                                globalMesh.Append(m);
+                            Polyline[] myPolys2 = globalMesh.GetOutlines(viewport);
+                            foreach (Polyline poly in myPolys2)
+                                e.Display.DrawCurve(poly.ToNurbsCurve(), Color.Red, 6);
+
+                            break;
+
+                        case Rhino.DocObjects.ObjectType.Mesh:
+                            var mesh = foundObject0.Geometry as Rhino.Geometry.Mesh;
+
+                            Polyline[] meshOutline = mesh.GetOutlines(viewport);
+                            foreach (Polyline poly in meshOutline)
+                                e.Display.DrawCurve(poly.ToNurbsCurve(), Color.Red, 6);
+
+                            Rhino.Geometry.Point3d myMeshCentroid = mesh.GetBoundingBox(true).Center;
+                            ce0 = myMeshCentroid;
+
+
+
+
+                            break;
+
+                        case Rhino.DocObjects.ObjectType.TextDot:
+                            // todo
+                            break;
+
+                        case Rhino.DocObjects.ObjectType.Annotation:
+                            // todo
+                            break;
+                    }
+
+                    switch (foundObject1.ObjectType)
+                    {
+
+
+
+                        case Rhino.DocObjects.ObjectType.Point:
+                            ce1 = ((Rhino.Geometry.Point)foundObject1.Geometry).Location;
+                            break;
+
+                        case Rhino.DocObjects.ObjectType.Curve:
+                            Rhino.Geometry.Curve myCurve = (Rhino.Geometry.Curve)foundObject1.Geometry;
+                            myCurve.Domain = new Rhino.Geometry.Interval(0, 1);
+                            ce1 = myCurve.PointAtNormalizedLength(0.5);
+                            break;
+
+                        case Rhino.DocObjects.ObjectType.Extrusion:
+                            Rhino.Geometry.Extrusion myExtru = (Rhino.Geometry.Extrusion)foundObject1.Geometry;
+                            Rhino.Geometry.Point3d myExtruCentroid = Rhino.Geometry.AreaMassProperties.Compute(myExtru.ToBrep()).Centroid;
+                            ce1 = myExtruCentroid;
+
+
+                            Rhino.Geometry.Brep myBrep = myExtru.ToBrep();
+                            Mesh[] extruMeshes = Rhino.Geometry.Mesh.CreateFromBrep(myBrep);
+                            Mesh globalExtruMesh = new Rhino.Geometry.Mesh();
+                            foreach (Mesh m in extruMeshes)
+                                globalExtruMesh.Append(m);
+                            Polyline[] myExtruPoly = globalExtruMesh.GetOutlines(viewport);
+                            foreach (Polyline poly in myExtruPoly)
+                                e.Display.DrawCurve(poly.ToNurbsCurve(), Color.Red, 6);
+
+                            break;
+
+                        case Rhino.DocObjects.ObjectType.Brep:
+                            Rhino.Geometry.Point3d myBrepCentroid = ((Brep)foundObject1.Geometry).GetBoundingBox(true).Center;
+                            ce1 = myBrepCentroid;
+
+                            Mesh[] meshes = Rhino.Geometry.Mesh.CreateFromBrep((Brep)foundObject1.Geometry);
+                            Mesh globalMesh = new Rhino.Geometry.Mesh();
+                            foreach (Mesh m in meshes)
+                                globalMesh.Append(m);
+                            Polyline[] myPolys2 = globalMesh.GetOutlines(viewport);
+                            foreach (Polyline poly in myPolys2)
+                                e.Display.DrawCurve(poly.ToNurbsCurve(), Color.Red, 6);
+
+                            break;
+
+                        case Rhino.DocObjects.ObjectType.Mesh:
+                            var mesh = foundObject1.Geometry as Rhino.Geometry.Mesh;
+                            Rhino.Geometry.Point3d myMeshCentroid = mesh.GetBoundingBox(true).Center;
+                            ce1 = myMeshCentroid;
+
+
+                            Polyline[] meshOutline = mesh.GetOutlines(viewport);
+                            foreach (Polyline poly in meshOutline)
+                                e.Display.DrawCurve(poly.ToNurbsCurve(), Color.Red, 6);
+
+
+                            break;
+
+                        case Rhino.DocObjects.ObjectType.TextDot:
+                            // todo
+                            break;
+
+                        case Rhino.DocObjects.ObjectType.Annotation:
+                            // todo
+                            break;
+                    }
+
+
                     Rhino.Geometry.Line graphEdge = new Rhino.Geometry.Line();
                     graphEdge.From = ce0;
                     graphEdge.To = ce1;

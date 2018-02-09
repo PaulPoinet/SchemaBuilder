@@ -456,7 +456,7 @@ export default {
       console.log( this.GlobalEdges )
       console.log( this.GlobalSiblingEdges )
       Interop.showEdges( JSON.stringify( this.GlobalEdges ) )
-      //Interop.showSiblingEdges( JSON.stringify( this.GlobalSiblingEdges ) )
+      Interop.showSiblingEdges( JSON.stringify( this.GlobalSiblingEdges ) )
     },
 
     PlugMyObject( ) {
